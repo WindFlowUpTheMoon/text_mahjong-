@@ -2,6 +2,7 @@ from pynats import NATSClient
 from base import Mahjong, Player
 from utils import *
 import json
+from copy import deepcopy
 
 
 class GameServer:
@@ -185,6 +186,28 @@ class GameServer:
         pass
 
 
+    def send_zimo(self, player):
+        with NATSClient(self.nats_addr) as client:
+            client.publish(player.uniq_id + '.zimo', payload = 'zimo'.encode())
+
+
+    def send_showhucards(self, player, id, handcards, pgcards):
+        with NATSClient(self.nats_addr) as client:
+            msg = [str(id), handcards, pgcards]
+            client.publish(player.uniq_id + '.showhucards', payload = json.dumps(msg).encode())
+
+
+    def send_dianpao(self, player):
+        with NATSClient(self.nats_addr) as client:
+            client.publish(player.uniq_id + '.dianpao', payload = 'dianpao'.encode())
+
+
+    def send_showdianpaocards(self, player, id, handcards, pgcards):
+        with NATSClient(self.nats_addr) as client:
+            msg = [str(id), handcards, pgcards]
+            client.publish(player.uniq_id + '.showdianpaocards', payload = json.dumps(msg).encode())
+
+
     def send_barkinfo(self, player, msg):
         '''
         广播玩家狗叫信息
@@ -281,7 +304,19 @@ class GameServer:
                 chigang_return = p.is_chigang(self.last_leftcard)
                 print('chigang_return', chigang_return)
                 # 点炮判断
-                pass
+                dianpao_return = False
+                lastcard = self.last_leftcard.card
+                if lastcard[1] in self.maj.abb_map:
+                    card_type = self.maj.abb_map[lastcard[1]]
+                else:
+                    card_type = '字牌'
+                tmp_handcards = deepcopy(p.hand_cards)
+                tmp_handcards[card_type].append(lastcard)
+
+                if not tmp_handcards['花牌']:
+                    dianpao_return = p.is_hu(tmp_handcards)
+                    if dianpao_return:  # 向玩家发送可点炮消息
+                        self.send_dianpao(p)
 
                 if peng_return:  # 向玩家发送可碰消息
                     self.peng_type = peng_return
@@ -291,8 +326,8 @@ class GameServer:
                     self.chigang_type = chigang_return
                     self.send_chigang(p)
                     break
-            # 无碰无杠则轮到下一个玩家
-            if not peng_return and not chigang_return:
+            # 无碰无杠无点炮则轮到下一个玩家
+            if not peng_return and not chigang_return and not dianpao_return:
                 print('no peng no gang')
                 tmp = (self.curplayer_id + 1) % self.kind
                 self.curplayer_id = tmp if tmp else self.kind
@@ -308,6 +343,13 @@ class GameServer:
                 bugang_return = curplayer.is_bugang(card)
                 # 判断是否暗杠
                 angang_return = curplayer.is_angang(card, type)
+                # 判断是否自摸
+                hu_return = False
+                if not curplayer.hand_cards['花牌']:
+                    hu_return = curplayer.is_hu(curplayer.hand_cards)
+                    if hu_return:
+                        self.send_zimo(curplayer)
+
                 if bugang_return:
                     self.bugang_card = card
                     self.bugang_type = bugang_return
@@ -316,6 +358,7 @@ class GameServer:
                     self.angang_card = card
                     self.angang_type = angang_return
                     self.send_angang(curplayer)
+
                 if not bugang_return and not angang_return:
                     self.send_throwcard(curplayer)
         # 花牌
@@ -433,18 +476,32 @@ class GameServer:
         pass
 
 
-    def handle_zimo(self):
+    def handle_zimo(self, msg):
         '''
         处理玩家自摸请求
         '''
-        pass
+        uniq_id, ifzimo = msg.payload.decode()
+        player = self.uniqid_players_map[uniq_id]
+        if ifzimo in ('y','Y'):
+            for p in self.players:
+                self.send_cardsinfo(p)
+                self.send_showhucards(p, player.id, player.hand_cards, player.pg_cards)
+        elif ifzimo in ('n','N'):
+            self.send_throwcard(player)
 
 
-    def handle_dianpao(self):
+    def handle_dianpao(self, msg):
         '''
         处理玩家点炮请求
         '''
-        pass
+        uniq_id, ifdianpao = msg.payload.decode()
+        player = self.uniqid_players_map[uniq_id]
+        if ifdianpao in ('y', 'Y'):
+            for p in self.players:
+                self.send_cardsinfo(p)
+                self.send_showdianpaocards(p, player.id, player.hand_cards, player.pg_cards)
+        elif ifdianpao in ('n', 'N'):
+            self.send_throwcard(player)
 
 
     # 启动游戏服务器

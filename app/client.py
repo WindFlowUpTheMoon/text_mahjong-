@@ -17,7 +17,7 @@ from pprint import pprint
 class Client:
     def __init__(self, name = '匿名'):
         self.name = name
-        self.nats_addr = 'nats://172.31.17.170:4222'
+        self.nats_addr = 'nats://localhost:4222'
         self.ip = str(socket.gethostbyname(socket.gethostname()))
         self.uniq_id = self.generate_randomId()
         print(self.uniq_id)
@@ -113,7 +113,7 @@ class Client:
         print()
 
 
-    def print_leftcards(l):
+    def print_leftcards(self, l):
         '''
         漂亮打印被打掉的牌面信息
         '''
@@ -187,6 +187,18 @@ class Client:
             client.publish('angang', payload = msg)
 
 
+    def send_zimo(self, ifzimo):
+        with NATSClient(self.nats_addr) as client:
+            msg = (self.uniq_id + ',' + ifzimo).encode()
+            client.publish('zimo', payload = msg)
+
+
+    def send_dianpao(self, ifdianpao):
+        with NATSClient(self.nats_addr) as client:
+            msg = (self.uniq_id + ',' + ifdianpao).encode()
+            client.publish('dianpao', payload = msg)
+
+
     def receive(self):
         with NATSClient(self.nats_addr) as client:
             # 订阅玩家狗叫信息
@@ -223,8 +235,12 @@ class Client:
             client.subscribe(self.uniq_id + '.anganginfo', callback = self.handle_anganginfo)
             # 订阅自摸消息
             client.subscribe(self.uniq_id + '.zimo', callback = self.handle_zimo)
+            # 订阅胡牌牌面信息
+            client.subscribe(self.uniq_id + '.showhucards', callback = self.handle_showhucards)
             # 订阅点炮消息
             client.subscribe(self.uniq_id + '.dianpao', callback = self.handle_dianpao)
+            # 订阅点炮牌面信息
+            client.subscribe(self.uniq_id + '.showdianpaocards', callback = self.handle_showdianpaocards)
             client.wait()
 
 
@@ -359,12 +375,38 @@ class Client:
         print(msg)
 
 
-    def handle_zimo(self):
-        pass
+    def handle_zimo(self, msg):
+        msg = msg.payload.decode()
+        if msg == 'zimo':
+            while True:
+                ifzimo = input('自摸？(输入y/n) ')
+                if ifzimo in ('y', 'n', 'Y', 'N'):
+                    break
+            self.send_zimo(ifzimo)
 
 
-    def handle_dianpao(self):
-        pass
+    def handle_showhucards(self, msg):
+        msg = msg.payload.decode()
+        id, handcards, pgcards = json.loads(msg)
+        print(id+'号自摸了！\n胡牌牌面信息：')
+        self.print_playercards(pgcards, handcards)
+
+
+    def handle_dianpao(self, msg):
+        msg = msg.payload.decode()
+        if msg == 'dianpao':
+            while True:
+                ifdianpao = input('点炮？(输入y/n) ')
+                if ifdianpao in ('y', 'n', 'Y', 'N'):
+                    break
+            self.send_dianpao(ifdianpao)
+
+
+    def handle_showdianpaocards(self, msg):
+        msg = msg.payload.decode()
+        id, handcards, pgcards = json.loads(msg)
+        print(id + '号点炮了！\n胡牌牌面信息：')
+        self.print_playercards(pgcards, handcards)
 
 
 def rejoin(curpath):

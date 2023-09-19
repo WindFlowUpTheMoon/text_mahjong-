@@ -101,7 +101,7 @@ def hepai(a):
 a=[1,1,2,2,3,3,4,4,5,6,6]
 # print(hepai(a))
 
-def handcards2numlist(d):
+def handcards2numlist():
     '''
     将手牌转为序数列表
     '''
@@ -118,3 +118,21 @@ def handcards2numlist(d):
     for k,v in d.items():
         l.extend([mmap[i] for i in v])
     return l
+
+print(handcards2numlist())
+
+
+# l = {'筒子':['1筒','1筒','2筒','2筒'],'条子':['1条','3条'],'万字':['4万'],'字牌':['东风','西风'],'花牌':[]}
+# mmap = {'筒': '筒子', '条': '条子', '万': '万字', '花': '花牌'}
+# card = '4筒'
+# cardtype = mmap[card[1]]
+# print(cardtype)
+# l[cardtype].append(card)
+# print(l)
+
+# from copy import deepcopy
+#
+# l = {'a':[1,2,3],'b':[4,5,6]}
+# a = deepcopy(l)
+# a['a'].append(3)
+# print(a,l)

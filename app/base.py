@@ -186,7 +186,7 @@ class Player:
                 player.money -= 2
 
 
-    def hu(self, hand_cards):
+    def is_hu(self, hand_cards):
         '''
         胡牌检测
         万：1-9，条：11-19，饼：21-29，东西南北风：31,33,35,37，中发白：41,43,45。
@@ -265,15 +265,9 @@ class Player:
             return False
 
 
-    def dianpao(self):
-        '''
-        点炮
-        '''
-        pass
-
 
 if __name__=='__main__':
     hand_cards = {'筒子':[],'条子':['1条','2条','2条','3条','3条','3条','4条','4条','5条','6条','6条','6条',],'万字':['5万','6万'],'字牌':[]}
     player=Player('test','1')
     player.hand_cards = hand_cards
-    print(player.hu(hand_cards))
+    print(player.is_hu(hand_cards))
