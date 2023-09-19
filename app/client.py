@@ -9,6 +9,8 @@ from os import path
 from threading import Thread
 from pynput import keyboard
 from traceback import print_exc
+from collections import Counter
+from pprint import pprint
 
 
 # 客户端类
@@ -27,6 +29,17 @@ class Client:
         self.leftcards = []
 
 
+    def get_help(self):
+        msg='''
+            /****************************************************************************/
+            打牌时输入 n 代表要打掉的第n张手牌，输入 -n 代表要打掉的倒数第n张手牌，输入 x 打掉手里的花牌；
+            按 v 键可查看其他牌面信息，包括牌堆剩余数量、其他玩家碰/杠后放桌上的牌、被打掉的牌；
+            按 c 键可输入文字进行广播，其他玩家将收到此广播信息；
+            /****************************************************************************/
+            '''
+        print(msg)
+
+
     def on_press(self, key):
         '''
         键盘按键处理
@@ -36,12 +49,16 @@ class Client:
             print('\n牌堆剩余：' + str(self.tablecards_num))
             for id, pgcards in self.otherplayers_cards:
                 print(str(id) + '号玩家：', pgcards)
-            print('牌面：', self.leftcards)
+            print('牌面：')
+            self.print_leftcards(self.leftcards)
             print()
         elif key == keyboard.KeyCode.from_char('h'):
             # 打印帮助文档
-            with open('../doc/help.txt', 'r', encoding = 'utf-8') as f:
-                print(f.read())
+            self.get_help()
+        # elif key == keyboard.KeyCode.from_char('c'):
+        #     # 狗叫
+        #     info = input('输入：')
+        #     self.send_bark(info)
 
 
     def keyboard_listening(self):
@@ -96,6 +113,25 @@ class Client:
         print()
 
 
+    def print_leftcards(l):
+        '''
+        漂亮打印被打掉的牌面信息
+        '''
+        l.sort()
+        c = Counter(l)
+        maj_map = {'筒子': [], '条子': [], '万字': [], '字牌': []}
+        for k, v in c.items():
+            if k[1] == '筒':
+                maj_map['筒子'].append((k, v))
+            elif k[1] == '条':
+                maj_map['条子'].append((k, v))
+            elif k[1] == '万':
+                maj_map['万字'].append((k, v))
+            else:
+                maj_map['字牌'].append((k, v))
+        pprint(maj_map)
+
+
     def get_handcards_num(self):
         '''
         计算手牌数量
@@ -106,6 +142,12 @@ class Client:
                 l += 1
         return l
         # print('1111',self.handcards_num)
+
+
+    def send_bark(self, info):
+        msg = (self.uniq_id + ',' + info).encode()
+        with NATSClient(self.nats_addr) as client:
+            client.publish('bark', payload = msg)
 
 
     # 发送加入请求
@@ -147,6 +189,8 @@ class Client:
 
     def receive(self):
         with NATSClient(self.nats_addr) as client:
+            # 订阅玩家狗叫信息
+            # client.subscribe(self.uniq_id + '.barkinfo', callback = self.handle_barkinfo)
             # 订阅加入消息
             client.subscribe(self.uniq_id + '.isjoin', callback = self.handle_isjoin)
             # 订阅游戏开始消息
@@ -182,6 +226,11 @@ class Client:
             # 订阅点炮消息
             client.subscribe(self.uniq_id + '.dianpao', callback = self.handle_dianpao)
             client.wait()
+
+
+    def handle_barkinfo(self, msg):
+        id, info = msg.payload.decode().split(',')
+        print(id+'号：'+info)
 
 
     def handle_isjoin(self, msg):

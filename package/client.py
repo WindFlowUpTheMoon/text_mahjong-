@@ -9,11 +9,13 @@ from os import path
 from threading import Thread
 from pynput import keyboard
 from traceback import print_exc
+from collections import Counter
+from pprint import pprint
 
 
 # 客户端类
 class Client:
-    def __init__(self, name='匿名'):
+    def __init__(self, name = '匿名'):
         self.name = name
         self.nats_addr = 'nats://172.31.17.170:4222'
         self.ip = str(socket.gethostbyname(socket.gethostname()))
@@ -47,7 +49,8 @@ class Client:
             print('\n牌堆剩余：' + str(self.tablecards_num))
             for id, pgcards in self.otherplayers_cards:
                 print(str(id) + '号玩家：', pgcards)
-            print('牌面：', self.leftcards)
+            print('牌面：')
+            self.print_leftcards(self.leftcards)
             print()
         elif key == keyboard.KeyCode.from_char('h'):
             # 打印帮助文档
@@ -58,7 +61,7 @@ class Client:
         '''
         按键监听
         '''
-        with keyboard.Listener(on_press=self.on_press) as listener:
+        with keyboard.Listener(on_press = self.on_press) as listener:
             listener.join()
 
 
@@ -90,20 +93,39 @@ class Client:
         lp2 = [i[1] for i in pgcards]
 
         for i in l1:
-            print(i + ' ', end='')
+            print(i + ' ', end = '')
         if pgcards:
-            print(' ' * 19, end='')
+            print(' ' * 19, end = '')
         for i in lp1:
-            print(i + ' ', end='')
+            print(i + ' ', end = '')
         print()
 
         for i in l2:
-            print(i + ' ', end='')
+            print(i + ' ', end = '')
         if pgcards:
-            print(' ' * 18, end='')
+            print(' ' * 18, end = '')
         for i in lp2:
-            print(i + ' ', end='')
+            print(i + ' ', end = '')
         print()
+
+
+    def print_leftcards(l):
+        '''
+        漂亮打印被打掉的牌面信息
+        '''
+        l.sort()
+        c = Counter(l)
+        maj_map = {'筒子': [], '条子': [], '万字': [], '字牌': []}
+        for k, v in c.items():
+            if k[1] == '筒':
+                maj_map['筒子'].append((k, v))
+            elif k[1] == '条':
+                maj_map['条子'].append((k, v))
+            elif k[1] == '万':
+                maj_map['万字'].append((k, v))
+            else:
+                maj_map['字牌'].append((k, v))
+        pprint(maj_map)
 
 
     def get_handcards_num(self):
@@ -122,75 +144,75 @@ class Client:
     def send_join(self):
         with NATSClient(self.nats_addr) as client:
             msg = (self.name + ',' + self.uniq_id + ',' + self.ip).encode()
-            client.publish('join', payload=msg)
+            client.publish('join', payload = msg)
 
 
     def send_throwcard(self, ind):
         with NATSClient(self.nats_addr) as client:
             msg = (self.uniq_id + ',' + str(ind)).encode()
-            client.publish('throwcard', payload=msg)
+            client.publish('throwcard', payload = msg)
 
 
     def send_peng(self, ifpeng):
         with NATSClient(self.nats_addr) as client:
             msg = (self.uniq_id + ',' + ifpeng).encode()
-            client.publish('peng', payload=msg)
+            client.publish('peng', payload = msg)
 
 
     def send_chigang(self, ifchigang):
         with NATSClient(self.nats_addr) as client:
             msg = (self.uniq_id + ',' + ifchigang).encode()
-            client.publish('chigang', payload=msg)
+            client.publish('chigang', payload = msg)
 
 
     def send_bugang(self, ifbugang):
         with NATSClient(self.nats_addr) as client:
             msg = (self.uniq_id + ',' + ifbugang).encode()
-            client.publish('bugang', payload=msg)
+            client.publish('bugang', payload = msg)
 
 
     def send_angang(self, ifangang):
         with NATSClient(self.nats_addr) as client:
             msg = (self.uniq_id + ',' + ifangang).encode()
-            client.publish('angang', payload=msg)
+            client.publish('angang', payload = msg)
 
 
     def receive(self):
         with NATSClient(self.nats_addr) as client:
             # 订阅加入消息
-            client.subscribe(self.uniq_id + '.isjoin', callback=self.handle_isjoin)
+            client.subscribe(self.uniq_id + '.isjoin', callback = self.handle_isjoin)
             # 订阅游戏开始消息
-            client.subscribe('startgame', callback=self.handle_startgame)
+            client.subscribe('startgame', callback = self.handle_startgame)
             # 订阅更新卡牌消息
-            client.subscribe(self.uniq_id + '.cardsinfo', callback=self.handle_cardsinfo)
+            client.subscribe(self.uniq_id + '.cardsinfo', callback = self.handle_cardsinfo)
             # 订阅打印手牌消息
-            client.subscribe(self.uniq_id + '.showmycards', callback=self.handle_showmycards)
+            client.subscribe(self.uniq_id + '.showmycards', callback = self.handle_showmycards)
             # 订阅可否打牌消息
-            client.subscribe(self.uniq_id + '.throwcard', callback=self.handle_throwcard)
+            client.subscribe(self.uniq_id + '.throwcard', callback = self.handle_throwcard)
             # 订阅打牌消息
-            client.subscribe(self.uniq_id + '.throwcardinfo', callback=self.throwcardinfo)
+            client.subscribe(self.uniq_id + '.throwcardinfo', callback = self.throwcardinfo)
             # 订阅摸牌消息
-            client.subscribe(self.uniq_id + '.getcard', callback=self.handle_getcard)
+            client.subscribe(self.uniq_id + '.getcard', callback = self.handle_getcard)
             # 订阅可否碰牌消息
-            client.subscribe(self.uniq_id + '.peng', callback=self.handle_peng)
+            client.subscribe(self.uniq_id + '.peng', callback = self.handle_peng)
             # 订阅碰牌消息
-            client.subscribe(self.uniq_id + '.penginfo', callback=self.handle_penginfo)
+            client.subscribe(self.uniq_id + '.penginfo', callback = self.handle_penginfo)
             # 订阅是否吃杠消息
-            client.subscribe(self.uniq_id + '.chigang', callback=self.handle_chigang)
+            client.subscribe(self.uniq_id + '.chigang', callback = self.handle_chigang)
             # 订阅吃杠消息
-            client.subscribe(self.uniq_id + '.chiganginfo', callback=self.handle_chiganginfo)
+            client.subscribe(self.uniq_id + '.chiganginfo', callback = self.handle_chiganginfo)
             # 订阅是否补杠消息
-            client.subscribe(self.uniq_id + '.bugang', callback=self.handle_bugang)
+            client.subscribe(self.uniq_id + '.bugang', callback = self.handle_bugang)
             # 订阅补杠消息
-            client.subscribe(self.uniq_id + '.buganginfo', callback=self.handle_buganginfo)
+            client.subscribe(self.uniq_id + '.buganginfo', callback = self.handle_buganginfo)
             # 订阅是否暗杠消息
-            client.subscribe(self.uniq_id + '.angang', callback=self.handle_angang)
+            client.subscribe(self.uniq_id + '.angang', callback = self.handle_angang)
             # 订阅暗杠消息
-            client.subscribe(self.uniq_id + '.anganginfo', callback=self.handle_anganginfo)
+            client.subscribe(self.uniq_id + '.anganginfo', callback = self.handle_anganginfo)
             # 订阅自摸消息
-            client.subscribe(self.uniq_id + '.zimo', callback=self.handle_zimo)
+            client.subscribe(self.uniq_id + '.zimo', callback = self.handle_zimo)
             # 订阅点炮消息
-            client.subscribe(self.uniq_id + '.dianpao', callback=self.handle_dianpao)
+            client.subscribe(self.uniq_id + '.dianpao', callback = self.handle_dianpao)
             client.wait()
 
 
@@ -200,14 +222,14 @@ class Client:
         if msg == '欢迎加入对局！':
             self.isjoin = True
             print('正在等待其他玩家加入对局。。。')
-            sleep(2)
+            sleep(1)
         else:
             sys.exit()
 
 
     def handle_startgame(self, msg):
         msg = msg.payload.decode()
-        print(msg+'\n')
+        print(msg + '\n')
 
 
     def handle_cardsinfo(self, msg):
@@ -257,7 +279,7 @@ class Client:
 
     def handle_getcard(self, msg):
         msg = msg.payload.decode()
-        print('摸到牌：',msg)
+        print('摸到牌：', msg)
 
 
     def handle_peng(self, msg):
@@ -334,7 +356,7 @@ def rejoin(curpath):
     '''
     c = Client()
     filename = curpath.split('\\')[-1].split('.')[0]
-    with open(filename + '_clientInfo.txt', 'r', encoding='utf-8') as f:
+    with open(filename + '_clientInfo.txt', 'r', encoding = 'utf-8') as f:
         c.name, c.uniq_id = f.read().split(',')
     c.receive()
 
@@ -343,11 +365,11 @@ def start(curpath):
     filename = curpath.split('\\')[-1].split('.')[0]
     print('filename:', filename)
     c = Client()
-    with open(filename + '_clientInfo.txt', 'w', encoding='utf-8') as f:
+    with open(filename + '_clientInfo.txt', 'w', encoding = 'utf-8') as f:
         f.write(c.name + ',' + c.uniq_id)
     c.send_join()
 
-    keyboard_thread = Thread(target=c.keyboard_listening)
+    keyboard_thread = Thread(target = c.keyboard_listening)
     keyboard_thread.start()
 
     c.receive()

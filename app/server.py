@@ -1,6 +1,6 @@
 from pynats import NATSClient
 from base import Mahjong, Player
-from utils import insert_card
+from utils import *
 import json
 
 
@@ -185,6 +185,27 @@ class GameServer:
         pass
 
 
+    def send_barkinfo(self, player, msg):
+        '''
+        广播玩家狗叫信息
+        '''
+        with NATSClient(self.nats_addr) as client:
+            client.publish(player.uniq_id + '.barkinfo', payload = msg.encode())
+
+
+    def handle_bark(self, msg):
+        '''
+        处理玩家狗叫信息
+        '''
+        uniq_id, info = msg.payload.decode().split(',')
+        bark_player = self.uniqid_players_map[uniq_id]
+        print(str(bark_player.id)+'号:'+info)
+        msg = str(bark_player.id) + ',' + info
+        for p in self.players:
+            if p != bark_player:
+                self.send_barkinfo(p, msg)
+
+
     def handle_join(self, msg):
         '''
         处理玩家加入请求
@@ -201,6 +222,7 @@ class GameServer:
 
             print('第' + str(player.id) + '位玩家"' + player.name + '"加入对局！')
 
+            # 激活状态，否则第一次send_isjoin会丢失
             with NATSClient(self.nats_addr) as client:
                 client.publish('enable', payload='enable'.encode())
             self.send_isjoin(player, '欢迎加入对局！')
@@ -221,6 +243,7 @@ class GameServer:
         else:
             print('已达最大玩家数量')
 
+            # 激活状态，否则第一次send_isjoin会丢失
             with NATSClient(self.nats_addr) as client:
                 client.publish('enable', payload='enable'.encode())
             self.send_isjoin(player, '已达最大玩家数量！')
@@ -427,6 +450,8 @@ class GameServer:
     # 启动游戏服务器
     def run(self):
         with NATSClient(self.nats_addr) as client:
+            # 订阅狗叫消息
+            # client.subscribe("bark", callback = self.handle_bark)
             # 订阅加入消息
             client.subscribe("join", callback = self.handle_join)
             # 订阅摸牌消息

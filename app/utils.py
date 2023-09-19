@@ -1,3 +1,5 @@
+
+
 def insert_card(table_cards, hand_cards, cards, abb_map):
     card = table_cards.pop(0)
     if card in cards['字牌']:
@@ -44,6 +46,25 @@ def print_playercards(player):
     for i in lp2:
         print(i + ' ', end = '')
     print()
+
+
+def handcards2numlist(d):
+    '''
+    将手牌转为序数列表
+    '''
+    tong_map = {str(i) + '筒': i for i in range(1, 10)}
+    tiao_map = {str(i - 10) + '条': i for i in range(11, 20)}
+    wan_map = {str(i - 20) + '万': i for i in range(21, 30)}
+    s = '东风 南风 西风 北风 红中 白板 发财'
+    inl = [31, 33, 35, 37, 41, 43, 45]
+    zi_map = dict(zip(s.split(' '), inl))
+
+    mmap = dict(**tong_map, **tiao_map, **wan_map, **zi_map)
+    l = []
+    for k, v in d.items():
+        l.extend([mmap[i] for i in v])
+
+    return l
 
 
 if __name__ == '__main__':

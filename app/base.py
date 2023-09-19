@@ -1,5 +1,5 @@
 from random import shuffle
-from utils import LastLeftCard
+from utils import LastLeftCard, handcards2numlist
 from collections import Counter
 
 
@@ -145,7 +145,7 @@ class Player:
             type = self.maj.abb_map[card_got[1]]
         else:
             type = '字牌'
-        if card_got in self.pg_cards:
+        if card_got in self.pg_cards and card_got[1] != '花':
             return type
         return False
 
@@ -186,50 +186,83 @@ class Player:
                 player.money -= 2
 
 
-    def hu(self):
+    def hu(self, hand_cards):
         '''
-        胡
+        胡牌检测
+        万：1-9，条：11-19，饼：21-29，东西南北风：31,33,35,37，中发白：41,43,45。
         '''
-        # 3*4+2 平胡
+        a = handcards2numlist(hand_cards)
+        a = sorted(a)
+        # print(a)
 
-        # 2*7 七对
-        for type, cards in self.hand_cards.items():
-            c = Counter(cards)
-            return all(v in (2, 4) for k, v in c.items())
-        # 12*1+2 十三幺
-        thirteen_cards = ['1筒', '9筒', '1条', '9条', '1万', '9万', '东风', '南风', '西风', '北风', '红中', '发财', '白板']
-        flatten_cards = [card for type, cards in self.hand_cards.items() for card in cards]
-        if set(flatten_cards) == set(thirteen_cards):
-            return True
+        # 是否有对子检查。
+        double = []
+        for x in set(a):
+            if a.count(x) >= 2:
+                double.append(x)
+        # print(double)
+        if len(double) == 0:
+            # print('和牌失败：无对子')
+            return False
 
-        # 鸡胡 1
+        # 7对子检查（由于不常见，可以放到后面进行判断）
+        # 对子的检查，特征1：必须是14张；特征2:一个牌型，有2张，或4张。特别注意有4张的情况。
+        if len(a) == 14:
+            for x in set(a):
+                if a.count(x) not in [2, 4]:
+                    break
+            else:
+                return True
 
-        # 碰碰胡 2
-        # 混一色
+        # 十三幺检查。
+        if len(a) == 14:
+            gtws = [1, 9, 11, 19, 21, 29, 31, 33, 35, 37, 41, 43,
+                    45]  # [1,9,11,19,21,29]+list(range(31,38,2))+list(range(41,46,2)) #用固定的表示方法，计算速度回加快。
+            # print(gtws)
+            for x in gtws:
+                if 1 <= a.count(x) <= 2:
+                    pass
+                else:
+                    break
+            else:
+                print('和牌：国土无双，十三幺！')
+                return True
 
-        # 清龙 3
-        # 三暗刻
-
-        # 清一色 4
-        # 七小对
-
-        # 混幺九 5
-        # 三杠
-
-        # 豪华七小对 7
-        # 清幺九
-        # 四暗刻
-        # 小四喜
-        # 小三元
-        # 字一色
-
-        # 大四喜 13
-        # 大三元
-        # 九宝莲灯
-        # 十三幺
-        # 十八罗汉
-        # 连七对
-        pass
+        # 常规和牌检测。
+        a1 = a.copy()
+        a2 = []  # a2用来存放和牌后分组的结果。
+        for x in double:
+            # print('double',x)
+            # print(a1[0] in a1 and (a1[0]+1) in a1 and (a1[0]+2) in a1)
+            a1.remove(x)
+            a1.remove(x)
+            a2.append((x, x))
+            for i in range(int(len(a1) / 3)):
+                # print('i-',i)
+                if a1.count(a1[0]) == 3:
+                    # 列表移除，可以使用remove,pop，和切片，这里切片更加实用。
+                    a2.append((a1[0],) * 3)
+                    a1 = a1[3:]
+                    # print(a1)
+                elif a1[0] in a1 and a1[0] + 1 in a1 and a1[
+                    0] + 2 in a1:  # 这里注意，11,2222,33，和牌结果22,123,123，则连续的3个可能不是相邻的。
+                    a2.append((a1[0], a1[0] + 1, a1[0] + 2))
+                    a1.remove(a1[0] + 2)
+                    a1.remove(a1[0] + 1)
+                    a1.remove(a1[0])
+                    # print(a1)
+                else:
+                    a1 = a.copy()
+                    a2 = []
+                    # print('重置')
+                    break
+            else:
+                # print('和牌成功,结果：',a2)
+                return True
+        # 如果上述没有返回和牌成功，这里需要返回和牌失败。
+        else:
+            # print('和牌失败：遍历完成。')
+            return False
 
 
     def dianpao(self):
@@ -237,3 +270,10 @@ class Player:
         点炮
         '''
         pass
+
+
+if __name__=='__main__':
+    hand_cards = {'筒子':[],'条子':['1条','2条','2条','3条','3条','3条','4条','4条','5条','6条','6条','6条',],'万字':['5万','6万'],'字牌':[]}
+    player=Player('test','1')
+    player.hand_cards = hand_cards
+    print(player.hu(hand_cards))
