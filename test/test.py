@@ -98,8 +98,8 @@ def hepai(a):
         # print('和牌失败：遍历完成。')
         return False
 
-a=[1,1,2,2,3,3,4,4,5,6,6]
-# print(hepai(a))
+a=[22,22,22,24,25,26,27,27,27,28,29]
+print(hepai(a))
 
 def handcards2numlist():
     '''
@@ -119,7 +119,7 @@ def handcards2numlist():
         l.extend([mmap[i] for i in v])
     return l
 
-print(handcards2numlist())
+# print(handcards2numlist())
 
 
 # l = {'筒子':['1筒','1筒','2筒','2筒'],'条子':['1条','3条'],'万字':['4万'],'字牌':['东风','西风'],'花牌':[]}

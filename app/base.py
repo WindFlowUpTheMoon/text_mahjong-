@@ -89,7 +89,7 @@ class Player:
         else:
             type = '字牌'
         c = Counter(self.hand_cards[type])
-        if c[leftcard] == 2:
+        if c[leftcard] >= 2:
             return type
         return False
 
@@ -116,7 +116,6 @@ class Player:
         else:
             type = '字牌'
         c = Counter(self.hand_cards[type])
-        print('ccccc', c)
         if c[leftcard] == 3:
             return type
         return False
@@ -177,6 +176,8 @@ class Player:
         '''
         暗杠
         '''
+        print(card_got,type)
+        print(self.hand_cards)
         for i in range(4):
             self.hand_cards[type].remove(card_got)
         self.pg_cards.extend([card_got] * 4)
@@ -265,9 +266,162 @@ class Player:
             return False
 
 
+    def kind_check(self, handcards, pgcards):
+        '''
+        番型检测
+        '''
+        numlist = handcards2numlist(handcards)
+        # 九宝莲灯
+        l1 = [str(i) for i in range(2,9)]
+        for type, cards in handcards.items():
+            if len(cards)==14 and all(i[0]=='1' for i in cards[:3]) and all(i[0]=='9' for i in cards[-3:]):
+                c = [i[0] for i in cards]
+                if all(i in c for i in l1):
+                    return '九宝莲灯'
+
+        # 十三幺
+        gtws = [1, 9, 11, 19, 21, 29, 31, 33, 35, 37, 41, 43, 45]
+        for i in gtws:
+            if 1 <= numlist.count(i) <= 2:
+                pass
+            else:
+                break
+        else:
+            return '十三幺'
+
+        # 连七对
+        for type, cards in handcards.items():
+            c = Counter(cards)
+            if len(cards) == 14 and all(v==2 for k,v in c.items()) and int(cards[-1][0])-int(cards[0][0])==6:
+                return '连七对'
+
+        # 大四喜
+        target = {'东风','南风','西风','北风'}
+        s = set(pgcards)
+        target -= s
+        c = Counter(handcards['字牌'])
+        for i in target:
+            if c[i] != 3:
+                break
+        else:
+            return '大四喜'
+
+        # 大三元
+        target = {'红中', '发财', '白板'}
+        s = set(pgcards)
+        target -= s
+        c = Counter(handcards['字牌'])
+        for i in target:
+            if c[i] != 3:
+                break
+        else:
+            return '大三元'
+
+        # 十八罗汉
+        c = Counter(pgcards)
+        if sum([i==4 for i in c.values()]) == 4:
+            return '十八罗汉'
+
+        # 豪华七小对
+        c = Counter(numlist)
+        if len(numlist)==14 and len(c)==6 and all(i in (2,4) for i in c.values()):
+            return '豪华七小对'
+
+        # 清幺九
+        pg = pgcards.copy()
+        for i in range(len(pgcards)-1,-1,-1):
+            if pg[i][1] == '花':
+                pg.remove(pg[i])
+        # print(pg)
+        for i in pg:
+            if i[0] not in ('1','9'):
+                break
+        else:
+            flag = False
+            for k,v in handcards.items():
+                for j in v:
+                    if j[0] not in ('1','9'):
+                        flag = True
+                        break
+                if flag:
+                    break
+            else:
+                return '清幺九'
+
+        # 四暗刻
+        c = Counter(numlist)
+        if sum(i==3 for i in c.values())==4:
+            return '四暗刻'
+        # 小四喜
+        if pass:
+            return '小四喜'
+        # # 小三元
+        # if pass:
+        #     return '小三元'
+        # # 字一色
+        # if pass:
+        #     return '字一色'
+        #
+        # # 混幺九
+        # if pass:
+        #     return '混幺九'
+        # # 三杠
+        # if pass:
+        #     return '三杠'
+        #
+        # # 清一色
+        # if pass:
+        #     return '清一色'
+        # # 七小对
+        # if pass:
+        #     return '七小对'
+        # # 清龙
+        # if pass:
+        #     return '清龙'
+        # # 三暗刻
+        # if pass:
+        #     return '三暗刻'
+        #
+        # # 碰碰胡
+        # if pass:
+        #     return '碰碰胡'
+        # # 混一色
+        # if pass:
+        #     return '混一色'
+        # # 双暗杠
+        # if pass:
+        #     return '双暗杠'
+        # # 双箭刻
+        # if pass:
+        #     return '双箭刻'
+        # # 五门齐
+        # if pass:
+        #     return '五门齐'
+        # for type, cards in handcards.items():
+        return '鸡胡'
+
+
+
+
 
 if __name__=='__main__':
-    hand_cards = {'筒子':[],'条子':['1条','2条','2条','3条','3条','3条','4条','4条','5条','6条','6条','6条',],'万字':['5万','6万'],'字牌':[]}
+    # hand_cards = {'筒子':[],'条子':['1条','1条','1条','2条','3条','4条','5条','5条','6条','7条','8条','9条','9条','9条'],'万字':[],'字牌':[]}
+    # hand_cards = {'筒子':[],'条子':['2条','2条','2条','2条','3条','3条','4条','4条','5条','5条','6条','6条','8条','8条'],'万字':[],'字牌':[]}
+    # hand_cards = {'筒子':['1筒','9筒'],'条子':['1条','9条'],'万字':['1万','9万'],'字牌':['东风','南风','西风','北风','红中', '发财', '白板', '白板']}
+    # hand_cards = {'筒子':['5筒','5筒'],'条子':[],'万字':[],'字牌':[]}
+    hand_cards = {'筒子': ['1筒', '1筒', '1筒'], '条子': ['1条','1条','1条','9条','9条','9条'], '万字': ['5万','5万','5万'], '字牌': ['发财','发财']}
+    pgcards = []
     player=Player('test','1')
     player.hand_cards = hand_cards
-    print(player.is_hu(hand_cards))
+    # print(player.is_hu(hand_cards))
+    cards = hand_cards['条子']
+    # cards = [i[0] for i in cards]
+    # print(cards)
+    # l1 = [str(i) for i in range(2,9)]
+    # f=all(i in cards for i in l1)
+    # print(f)
+    # c = Counter(cards)
+    # print(c)
+    # print(all(v==2 for k,v in c.items()))
+    kind = player.kind_check(hand_cards, pgcards)
+    print(kind)

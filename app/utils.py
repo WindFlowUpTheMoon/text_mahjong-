@@ -60,7 +60,6 @@ def handcards2numlist(d):
     zi_map = dict(zip(s.split(' '), inl))
 
     mmap = dict(**tong_map, **tiao_map, **wan_map, **zi_map)
-    print('mmap:',mmap)
     l = []
     for k, v in d.items():
         l.extend([mmap[i] for i in v])

@@ -6,8 +6,8 @@ from random import randint
 import sys
 from time import sleep
 from os import path
-from threading import Thread
-from pynput import keyboard
+# from threading import Thread
+# from pynput import keyboard
 from traceback import print_exc
 from collections import Counter
 from pprint import pprint
@@ -20,7 +20,7 @@ class Client:
         self.nats_addr = 'nats://localhost:4222'
         self.ip = str(socket.gethostbyname(socket.gethostname()))
         self.uniq_id = self.generate_randomId()
-        print(self.uniq_id)
+        # print(self.uniq_id)
         self.isjoin = False
         self.hand_cards = {}
         self.pg_cards = []
@@ -29,44 +29,48 @@ class Client:
         self.leftcards = []
 
 
+    def set_natsaddr(self, ip):
+        self.nats_addr = 'nats://'+str(ip)+':4222'
+
+
     def get_help(self):
         msg='''
             /****************************************************************************/
-            打牌时输入 n 代表要打掉的第n张手牌，输入 -n 代表要打掉的倒数第n张手牌，输入 x 打掉手里的花牌；
-            按 v 键可查看其他牌面信息，包括牌堆剩余数量、其他玩家碰/杠后放桌上的牌、被打掉的牌；
-            按 c 键可输入文字进行广播，其他玩家将收到此广播信息；
+            输入 正整数n 代表要打掉的第n张手牌，输入 -n 代表要打掉的倒数第n张手牌，输入 x 打掉手里的花牌；
+            输入 v 可查看其他牌面信息，包括牌堆剩余数量、其他玩家碰/杠后放桌上的牌、被打掉的牌；
+            输入其他的信息将向其他玩家将收到此广播信息；
             /****************************************************************************/
             '''
         print(msg)
 
 
-    def on_press(self, key):
-        '''
-        键盘按键处理
-        '''
-        if key == keyboard.KeyCode.from_char('v'):
-            # 打印其他牌面信息
-            print('\n牌堆剩余：' + str(self.tablecards_num))
-            for id, pgcards in self.otherplayers_cards:
-                print(str(id) + '号玩家：', pgcards)
-            print('牌面：')
-            self.print_leftcards(self.leftcards)
-            print()
-        elif key == keyboard.KeyCode.from_char('h'):
-            # 打印帮助文档
-            self.get_help()
+    # def on_press(self, key):
+    #     '''
+    #     键盘按键处理
+    #     '''
+    #     if key == keyboard.KeyCode.from_char('v'):
+    #         # 打印其他牌面信息
+    #         print('\n牌堆剩余：' + str(self.tablecards_num))
+    #         for id, pgcards in self.otherplayers_cards:
+    #             print(str(id) + '号玩家：', pgcards)
+    #         print('牌面：')
+    #         self.print_leftcards(self.leftcards)
+    #         print()
+    #     elif key == keyboard.KeyCode.from_char('h'):
+    #         # 打印帮助文档
+    #         self.get_help()
         # elif key == keyboard.KeyCode.from_char('c'):
         #     # 狗叫
         #     info = input('输入：')
         #     self.send_bark(info)
 
 
-    def keyboard_listening(self):
-        '''
-        按键监听
-        '''
-        with keyboard.Listener(on_press = self.on_press) as listener:
-            listener.join()
+    # def keyboard_listening(self):
+    #     '''
+    #     按键监听
+    #     '''
+    #     with keyboard.Listener(on_press = self.on_press) as listener:
+    #         listener.join()
 
 
     def generate_randomId(self):
@@ -163,15 +167,15 @@ class Client:
             client.publish('throwcard', payload = msg)
 
 
-    def send_peng(self, ifpeng):
+    def send_peng(self, ifpeng, cptype):
         with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + ifpeng).encode()
+            msg = (self.uniq_id + ',' + ifpeng + ',' + cptype).encode()
             client.publish('peng', payload = msg)
 
 
-    def send_chigang(self, ifchigang):
+    def send_chigang(self, ifchigang, cptype):
         with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + ifchigang).encode()
+            msg = (self.uniq_id + ',' + ifchigang + ',' + cptype).encode()
             client.publish('chigang', payload = msg)
 
 
@@ -199,10 +203,36 @@ class Client:
             client.publish('dianpao', payload = msg)
 
 
+    def send_chigang_peng(self, flag, cptype):
+        with NATSClient(self.nats_addr) as client:
+            msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
+            client.publish('chigang_peng', payload = msg)
+
+
+    def send_dianpao_peng(self, flag, cptype):
+        with NATSClient(self.nats_addr) as client:
+            msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
+            client.publish('dianpao_peng', payload = msg)
+
+
+    def send_dianpao_chigang(self, flag, cptype):
+        with NATSClient(self.nats_addr) as client:
+            msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
+            client.publish('dianpao_chigang', payload = msg)
+
+
+    def send_dianpao_chigang_peng(self, flag, cptype):
+        with NATSClient(self.nats_addr) as client:
+            msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
+            client.publish('dianpao_chigang_peng', payload = msg)
+
+
     def receive(self):
         with NATSClient(self.nats_addr) as client:
             # 订阅玩家狗叫信息
-            # client.subscribe(self.uniq_id + '.barkinfo', callback = self.handle_barkinfo)
+            client.subscribe(self.uniq_id + '.barkinfo', callback = self.handle_barkinfo)
+            # 订阅唤醒信息
+            client.subscribe('awake', callback = self.handle_awake)
             # 订阅加入消息
             client.subscribe(self.uniq_id + '.isjoin', callback = self.handle_isjoin)
             # 订阅游戏开始消息
@@ -241,6 +271,14 @@ class Client:
             client.subscribe(self.uniq_id + '.dianpao', callback = self.handle_dianpao)
             # 订阅点炮牌面信息
             client.subscribe(self.uniq_id + '.showdianpaocards', callback = self.handle_showdianpaocards)
+            # 订阅吃杠/碰消息
+            client.subscribe(self.uniq_id + '.chigang_peng', callback = self.handle_chigang_peng)
+            # 订阅点炮/碰消息
+            client.subscribe(self.uniq_id + '.dianpao_peng', callback = self.handle_dianpao_peng)
+            # 订阅点炮/吃杠消息
+            client.subscribe(self.uniq_id + '.dianpao_chigang', callback = self.handle_dianpao_chigang)
+            # 订阅点炮/吃杠/碰消息
+            client.subscribe(self.uniq_id + '.dianpao_chigang_peng', callback = self.handle_dianpao_chigang_peng)
             client.wait()
 
 
@@ -249,10 +287,16 @@ class Client:
         print(id+'号：'+info)
 
 
+    def handle_awake(self, msg):
+        msg = msg.payload.decode()
+        pass
+
+
     def handle_isjoin(self, msg):
         msg = msg.payload.decode()
         print(msg)
         if msg == '欢迎加入对局！':
+            print('输入时输入 h 或 help 可查看帮助文档')
             self.isjoin = True
             print('正在等待其他玩家加入对局。。。')
             sleep(1)
@@ -277,6 +321,7 @@ class Client:
         msg = msg.payload.decode()
         if msg == 'showmycards':
             print('你的牌为：')
+            # print(self.hand_cards)
             self.print_playercards(self.pg_cards, self.hand_cards)
 
 
@@ -284,25 +329,34 @@ class Client:
         msg = msg.payload.decode()
         if msg == 'throwcard':
             while True:
-                ind = input('打掉: ')
+                inp = input('输入: ')
                 # 考虑玩家非法输入
                 try:
-                    ind = int(ind)
+                    inp = int(inp)
                 except:
-                    if ind == 'x':  # 打掉花牌
+                    if inp == 'x':  # 打掉花牌
                         break
+                    elif inp == 'v':    # 查看其他牌面信息
+                        print('\n牌堆剩余：' + str(self.tablecards_num))
+                        for id, pgcards in self.otherplayers_cards:
+                            print(str(id) + '号玩家：', pgcards)
+                        print('牌面：')
+                        self.print_leftcards(self.leftcards)
+                        print()
+                    elif inp in ('h','H','help','Help','HELP'):
+                        self.get_help()
                     else:
-                        print('输入有误，请重新输入！')
+                        self.send_bark(inp)
                 else:
                     l = self.get_handcards_num()
-                    if 0 < ind <= l:
-                        ind -= 1
+                    if 0 < inp <= l:
+                        inp -= 1
                         break
-                    elif -l <= ind < 0:
+                    elif -l <= inp < 0:
                         break
                     else:
                         print('输入有误，请重新输入！')
-            self.send_throwcard(ind)
+            self.send_throwcard(inp)
 
 
     def throwcardinfo(self, msg):
@@ -316,13 +370,12 @@ class Client:
 
 
     def handle_peng(self, msg):
-        msg = msg.payload.decode()
-        if msg == '可碰':
-            while True:
-                ifpeng = input('碰？(输入y/n) ')
-                if ifpeng in ('y', 'n', 'Y', 'N'):
-                    break
-            self.send_peng(ifpeng)
+        cptype = msg.payload.decode()
+        while True:
+            ifpeng = input('碰？(输入y/n) ')
+            if ifpeng in ('y', 'n', 'Y', 'N'):
+                break
+        self.send_peng(ifpeng, cptype)
 
 
     def handle_penginfo(self, msg):
@@ -331,13 +384,12 @@ class Client:
 
 
     def handle_chigang(self, msg):
-        msg = msg.payload.decode()
-        if msg == '可吃杠':
-            while True:
-                ifchigang = input('杠？(输入y/n) ')
-                if ifchigang in ('y', 'n', 'Y', 'N'):
-                    break
-            self.send_chigang(ifchigang)
+        cptype = msg.payload.decode()
+        while True:
+            ifchigang = input('杠？(输入y/n) ')
+            if ifchigang in ('y', 'n', 'Y', 'N'):
+                break
+        self.send_chigang(ifchigang, cptype)
 
 
     def handle_chiganginfo(self, msg):
@@ -409,6 +461,43 @@ class Client:
         self.print_playercards(pgcards, handcards)
 
 
+    def handle_chigang_peng(self, msg):
+        print('receive chigang_peng')
+        cptype = msg.payload.decode()
+        while True:
+            flag = input('杠/碰/no？(输入1/2/n) ')
+            if flag in ('1','2', 'n', 'N'):
+                break
+        self.send_chigang_peng(flag, cptype)
+
+
+    def handle_dianpao_peng(self, msg):
+        cptype = msg.payload.decode()
+        while True:
+            flag = input('点炮/碰/no？(输入1/2/n) ')
+            if flag in ('1','2', 'n', 'N'):
+                break
+        self.send_dianpao_peng(flag, cptype)
+
+
+    def handle_dianpao_chigang(self, msg):
+        cptype = msg.payload.decode()
+        while True:
+            flag = input('点炮/杠/no？(输入1/2/n) ')
+            if flag in ('1','2', 'n', 'N'):
+                break
+        self.send_dianpao_chigang(flag, cptype)
+
+
+    def handle_dianpao_chigang_peng(self, msg):
+        cptype = msg.payload.decode()
+        while True:
+            flag = input('点炮/杠/碰/no？(输入1/2/3/n) ')
+            if flag in ('1','2', '3', 'n', 'N'):
+                break
+        self.send_dianpao_chigang_peng(flag, cptype)
+
+
 def rejoin(curpath):
     '''
     断线重连
@@ -422,16 +511,22 @@ def rejoin(curpath):
 
 def start(curpath):
     filename = curpath.split('\\')[-1].split('.')[0]
-    print('filename:', filename)
+    # print('filename:', filename)
     c = Client()
     with open(filename + '_clientInfo.txt', 'w', encoding = 'utf-8') as f:
         f.write(c.name + ',' + c.uniq_id)
-    c.send_join()
 
-    keyboard_thread = Thread(target = c.keyboard_listening)
-    keyboard_thread.start()
+    ip = input('输入目标ip：')
+    if ip != 'n':
+        c.set_natsaddr(ip)
 
-    c.receive()
+    try:
+        c.send_join()
+        # keyboard_thread = Thread(target = c.keyboard_listening)
+        # keyboard_thread.start()
+        c.receive()
+    except:
+        print_exc()
 
 
 if __name__ == '__main__':
