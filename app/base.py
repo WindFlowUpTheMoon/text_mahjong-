@@ -8,7 +8,8 @@ class Mahjong:
         self.types = ['筒子', '条子', '万字', '字牌', '花牌']
         self.cards = {self.types[0]: list(range(1, 10)), self.types[1]: list(range(1, 10)),
                       self.types[2]: list(range(1, 10)), \
-                      self.types[3]: ['东风', '南风', '西风', '北风', '红中', '发财', '白板'], self.types[4]: [1, 2, 3, 4]}
+                      self.types[3]: ['东风', '南风', '西风', '北风', '红中', '发财', '白板'],
+                      self.types[4]: [1, 2, 3, 4]}
         self.abb_map = {'筒': '筒子', '条': '条子', '万': '万字', '花': '花牌'}
         self.all_cards = []
         for k, v in self.cards.items():
@@ -21,7 +22,6 @@ class Mahjong:
             else:
                 for i in v:
                     self.all_cards.extend([str(i) + '花'] * 2)
-
 
     def shuffle_cards(self):
         '''
@@ -43,7 +43,6 @@ class Player:
         self.pg_num = 0  # 碰、杠的次数
         self.money = 0  # 筹码
 
-
     def get_card(self, table_cards):
         '''
         摸牌
@@ -58,13 +57,12 @@ class Player:
         self.hand_cards[type].sort()
         return type, card
 
-
     def throw_card(self, left_cards, ind):
         '''
         打牌
         '''
         # nonlocal left_cards
-        l=[]
+        l = []
         for type, cards in self.hand_cards.items():
             l.extend(cards)
         card = l.pop(ind)
@@ -77,7 +75,6 @@ class Player:
         self.hand_cards[type].remove(card)
         left_cards.append(card)
         return card
-
 
     def is_peng(self, last_left_card: LastLeftCard):
         '''
@@ -93,7 +90,6 @@ class Player:
             return type
         return False
 
-
     def peng(self, last_left_card: LastLeftCard, left_cards, type):
         '''
         碰
@@ -104,7 +100,6 @@ class Player:
         self.hand_cards[type].remove(leftcard)
         self.pg_cards.extend([leftcard] * 3)
         self.pg_num += 1
-
 
     def is_chigang(self, last_left_card: LastLeftCard):
         '''
@@ -120,7 +115,6 @@ class Player:
             return type
         return False
 
-
     def chigang(self, last_left_card: LastLeftCard, left_cards, type):
         '''
         吃杠
@@ -135,7 +129,6 @@ class Player:
         self.money += 3
         last_left_card.player.money -= 3
 
-
     def is_bugang(self, card_got):
         '''
         判断是否可补杠
@@ -148,7 +141,6 @@ class Player:
             return type
         return False
 
-
     def bugang(self, card_got, type, players):
         '''
         补杠
@@ -156,11 +148,10 @@ class Player:
         self.hand_cards[type].remove(card_got)
         ind = self.pg_cards.index(card_got)
         self.pg_cards.insert(ind, card_got)
-        self.money += (len(players)-1)
+        self.money += (len(players) - 1)
         for player in players:
             if player != self:
                 player.money -= 1
-
 
     def is_angang(self, card_got, type):
         '''
@@ -171,21 +162,19 @@ class Player:
             return True
         return False
 
-
     def angang(self, card_got, type, players):
         '''
         暗杠
         '''
-        print(card_got,type)
+        print(card_got, type)
         print(self.hand_cards)
         for i in range(4):
             self.hand_cards[type].remove(card_got)
         self.pg_cards.extend([card_got] * 4)
-        self.money += (len(players)-1) * 2
+        self.money += (len(players) - 1) * 2
         for player in players:
             if player != self:
                 player.money -= 2
-
 
     def is_hu(self, hand_cards):
         '''
@@ -265,16 +254,15 @@ class Player:
             # print('和牌失败：遍历完成。')
             return False
 
-
     def kind_check(self, handcards, pgcards):
         '''
         番型检测
         '''
         numlist = handcards2numlist(handcards)
         # 九宝莲灯
-        l1 = [str(i) for i in range(2,9)]
+        l1 = [str(i) for i in range(2, 9)]
         for type, cards in handcards.items():
-            if len(cards)==14 and all(i[0]=='1' for i in cards[:3]) and all(i[0]=='9' for i in cards[-3:]):
+            if len(cards) == 14 and all(i[0] == '1' for i in cards[:3]) and all(i[0] == '9' for i in cards[-3:]):
                 c = [i[0] for i in cards]
                 if all(i in c for i in l1):
                     return '九宝莲灯'
@@ -292,11 +280,11 @@ class Player:
         # 连七对
         for type, cards in handcards.items():
             c = Counter(cards)
-            if len(cards) == 14 and all(v==2 for k,v in c.items()) and int(cards[-1][0])-int(cards[0][0])==6:
+            if len(cards) == 14 and all(v == 2 for k, v in c.items()) and int(cards[-1][0]) - int(cards[0][0]) == 6:
                 return '连七对'
 
         # 大四喜
-        target = {'东风','南风','西风','北风'}
+        target = {'东风', '南风', '西风', '北风'}
         s = set(pgcards)
         target -= s
         c = Counter(handcards['字牌'])
@@ -319,28 +307,28 @@ class Player:
 
         # 十八罗汉
         c = Counter(pgcards)
-        if sum([i==4 for i in c.values()]) == 4:
+        if sum([i == 4 for i in c.values()]) == 4:
             return '十八罗汉'
 
         # 豪华七小对
         c = Counter(numlist)
-        if len(numlist)==14 and len(c)==6 and all(i in (2,4) for i in c.values()):
+        if len(numlist) == 14 and len(c) == 6 and all(i in (2, 4) for i in c.values()):
             return '豪华七小对'
 
         # 清幺九
         pg = pgcards.copy()
-        for i in range(len(pgcards)-1,-1,-1):
+        for i in range(len(pgcards) - 1, -1, -1):
             if pg[i][1] == '花':
                 pg.remove(pg[i])
         # print(pg)
         for i in pg:
-            if i[0] not in ('1','9'):
+            if i[0] not in ('1', '9'):
                 break
         else:
             flag = False
-            for k,v in handcards.items():
+            for k, v in handcards.items():
                 for j in v:
-                    if j[0] not in ('1','9'):
+                    if j[0] not in ('1', '9'):
                         flag = True
                         break
                 if flag:
@@ -350,34 +338,84 @@ class Player:
 
         # 四暗刻
         c = Counter(numlist)
-        if sum(i==3 for i in c.values())==4:
+        if sum(i == 3 for i in c.values()) == 4:
             return '四暗刻'
+
         # 小四喜
-        if pass:
+        target = {'东风', '南风', '西风', '北风'}
+        s = set(pgcards)
+        target -= s
+        c = Counter(handcards['字牌'])
+        l = []
+        for i in target:
+            l.append(c[i])
+        if sum(l) == (2 + (len(target)-1) * 3):
             return '小四喜'
-        # # 小三元
-        # if pass:
-        #     return '小三元'
-        # # 字一色
-        # if pass:
-        #     return '字一色'
-        #
-        # # 混幺九
-        # if pass:
-        #     return '混幺九'
-        # # 三杠
-        # if pass:
-        #     return '三杠'
-        #
-        # # 清一色
-        # if pass:
-        #     return '清一色'
-        # # 七小对
-        # if pass:
-        #     return '七小对'
-        # # 清龙
-        # if pass:
-        #     return '清龙'
+
+        # 小三元
+        target = {'红中', '发财', '白板'}
+        s = set(pgcards)
+        target -= s
+        print(target)
+        c = Counter(handcards['字牌'])
+        l = []
+        for i in target:
+            l.append(c[i])
+        if sum(l) == (2 + (len(target)-1) * 3):
+            return '小三元'
+
+        # 字一色
+        if all(i>=31 for i in numlist) and all(i[1] in '花风中财板' for i in pgcards):
+            return '字一色'
+
+        # 混幺九
+        for i in pg:
+            if i[0] not in '19' and i[1] not in '风中财板':
+                break
+        else:
+            flag = False
+            for k, v in handcards.items():
+                for j in v:
+                    if j[0] not in '19' and j[1] not in '风中财板':
+                        flag = True
+                        break
+                if flag:
+                    break
+            else:
+                return '混幺九'
+
+        # 三杠
+        c = Counter(pgcards)
+        if sum([i == 4 for i in c.values()]) == 3:
+            return '三杠'
+
+        # 清一色
+        if sum(len(i)>0 for i in handcards.values())==1:
+            for type, cards in handcards.items():
+                if cards:
+                    break
+            for i in pg:
+                if i[1] != type[0]:
+                    break
+            else:
+                return '清一色'
+
+        # 七小对
+        c = Counter(numlist)
+        if len(numlist)==14 and all(i==2 for i in c.values()):
+            return '七小对'
+
+        # 清龙
+        if len(numlist)>=9:
+            for type, cards in handcards.items():
+                if len(cards)>=9:
+                    l = [j[0] for j in cards]
+                    for i in [str(j) for j in range(1,10)]:
+                        if i not in l:
+                            break
+                    else:
+                        return '清龙'
+
         # # 三暗刻
         # if pass:
         #     return '三暗刻'
@@ -401,17 +439,24 @@ class Player:
         return '鸡胡'
 
 
-
-
-
-if __name__=='__main__':
+if __name__ == '__main__':
     # hand_cards = {'筒子':[],'条子':['1条','1条','1条','2条','3条','4条','5条','5条','6条','7条','8条','9条','9条','9条'],'万字':[],'字牌':[]}
     # hand_cards = {'筒子':[],'条子':['2条','2条','2条','2条','3条','3条','4条','4条','5条','5条','6条','6条','8条','8条'],'万字':[],'字牌':[]}
-    # hand_cards = {'筒子':['1筒','9筒'],'条子':['1条','9条'],'万字':['1万','9万'],'字牌':['东风','南风','西风','北风','红中', '发财', '白板', '白板']}
+    # hand_cards = {'筒子':['1筒','9筒'],'条子':['1条','9条'],'万字':['1万','9万'],'字牌':['东风','南风','西风','北风',cc]}
     # hand_cards = {'筒子':['5筒','5筒'],'条子':[],'万字':[],'字牌':[]}
-    hand_cards = {'筒子': ['1筒', '1筒', '1筒'], '条子': ['1条','1条','1条','9条','9条','9条'], '万字': ['5万','5万','5万'], '字牌': ['发财','发财']}
-    pgcards = []
-    player=Player('test','1')
+    # hand_cards = {'筒子': ['1筒', '1筒', '1筒'], '条子': ['1条', '1条', '1条', '9条', '9条', '9条'],
+    #               '万字': ['5万', '5万', '5万'], '字牌': ['发财', '发财']}
+    # hand_cards = {'筒子': ['1筒', '1筒', '1筒'], '条子': [ '9条', '9条', '9条'],
+    #               '万字': [], '字牌': ['发财', '发财','发财','白板','白板']}
+    # hand_cards = {'筒子': [], '条子': [],'万字': [], '字牌': ['发财', '发财','发财','东风','东风','东风','南风','南风','西风','西风','西风']}
+    # hand_cards = {'筒子': [], '条子': ['1条', '2条', '3条'], '万字': [],
+    #               '字牌': [ '南风', '南风']}
+    # hand_cards = {'筒子': ['5筒','5筒','7筒','7筒'],
+    #               '条子': ['2条', '2条', '5条', '5条', '7条', '7条'], '万字': [], '字牌': ['东风','东风','南风','南风']}
+    hand_cards = {'筒子': [],
+                  '条子': ['1条', '2条', '3条', '4条', '5条','6条', '7条', '8条', '9条'], '万字': [], '字牌': ['东风','东风']}
+    pgcards = ['9条', '9条', '9条','3花']
+    player = Player('test', '1')
     player.hand_cards = hand_cards
     # print(player.is_hu(hand_cards))
     cards = hand_cards['条子']
