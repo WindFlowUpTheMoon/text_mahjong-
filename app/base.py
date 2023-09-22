@@ -50,6 +50,8 @@ class Player:
         摸牌
         '''
         # nonlocal table_cards
+        if not table_cards:
+            return 'empty', ''
         card = table_cards.pop(0)
         if card[1] in self.maj.abb_map:
             type = self.maj.abb_map[card[1]]

@@ -8,6 +8,7 @@ from copy import deepcopy
 class GameServer:
     def __init__(self):
         self.nats_addr = "nats://localhost:4222"
+        self.connect()
         self.maj = Mahjong()
         self.table_cards = self.maj.shuffle_cards()  # 未被使用的牌堆
         # self.table_cards = ['6万']*50
@@ -24,6 +25,15 @@ class GameServer:
         self.curplayer_id = 1  # 当前轮到摸牌的玩家id
         self.uniqid_players_map = {}  # uniq_id与玩家的映射
         self.id_players_map = {}  # id与玩家的映射
+
+
+    def connect(self):
+        self.client = NATSClient(self.nats_addr)
+        self.client.connect()
+
+
+    def disconnect(self):
+        self.client.close()
 
 
     def set_kind(self, x):
@@ -64,42 +74,33 @@ class GameServer:
         return [player.hand_cards for player in self.players]
 
 
-    def awaken_client(self, player):
-        # 唤醒客户端
-        with NATSClient(self.nats_addr) as client:
-            client.publish('awake', payload = 'enable'.encode())
-
-
     def send_isjoin(self, player, msg):
         '''
         给玩家发送加入请求的返回信息
         '''
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.isjoin', payload = msg.encode())
+        self.client.publish(player.uniq_id + '.isjoin', payload = msg.encode())
 
 
     def send_startgame(self):
         '''
         向对局中的每个玩家发送游戏开始消息
         '''
-        with NATSClient(self.nats_addr) as client:
-            client.publish('startgame', payload = '游戏开始'.encode())
+        self.client.publish('startgame', payload = '游戏开始'.encode())
 
 
     def send_cardsinfo(self, player):
         '''
         每次操作都要给玩家发送更新卡牌信息
         '''
-        with NATSClient(self.nats_addr) as client:
-            mycards = [player.hand_cards, player.pg_cards]
-            otherplayers_cards = []
-            for p in self.players:
-                if p != player:
-                    otherplayers_cards.append([p.id, p.pg_cards])
-            tablecards_num = len(self.table_cards)
-            leftcards = self.left_cards
-            cardsinfo = [mycards, otherplayers_cards, tablecards_num, leftcards]
-            client.publish(player.uniq_id + '.cardsinfo', payload = json.dumps(cardsinfo).encode())
+        mycards = [player.hand_cards, player.pg_cards]
+        otherplayers_cards = []
+        for p in self.players:
+            if p != player:
+                otherplayers_cards.append([p.id, p.pg_cards])
+        tablecards_num = len(self.table_cards)
+        leftcards = self.left_cards
+        cardsinfo = [mycards, otherplayers_cards, tablecards_num, leftcards]
+        self.client.publish(player.uniq_id + '.cardsinfo', payload = json.dumps(cardsinfo).encode())
 
 
     def send_showmycards(self, player):
@@ -107,8 +108,7 @@ class GameServer:
         给玩家发送消息让玩家打印自己的手牌信息
         '''
         print(player.uniq_id)
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.showmycards', payload = 'showmycards'.encode())
+        self.client.publish(player.uniq_id + '.showmycards', payload = 'showmycards'.encode())
 
 
     def send_throwcard(self, player):
@@ -116,25 +116,22 @@ class GameServer:
         向玩家发送可以打牌的消息
         '''
         print('send_throwcard')
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.throwcard', payload = 'throwcard'.encode())
+        self.client.publish(player.uniq_id + '.throwcard', payload = 'throwcard'.encode())
 
 
     def send_getcard(self, player, card):
         '''
         向玩家发送摸牌消息
         '''
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.getcard', payload = card.encode())
+        self.client.publish(player.uniq_id + '.getcard', payload = card.encode())
 
 
     def send_throwcardinfo(self, player, player2, card):
         '''
         向玩家发送打掉的牌的信息
         '''
-        with NATSClient(self.nats_addr) as client:
-            msg = str(player2.id) + '号打掉：' + card
-            client.publish(player.uniq_id + '.throwcardinfo', payload = msg.encode())
+        msg = str(player2.id) + '号打掉：' + card
+        self.client.publish(player.uniq_id + '.throwcardinfo', payload = msg.encode())
 
 
     def send_peng(self, player, cptype):
@@ -142,14 +139,12 @@ class GameServer:
         向玩家发送可以碰牌的消息
         '''
         print('send_peng:', cptype, player.uniq_id)
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.peng', payload = cptype.encode())
+        self.client.publish(player.uniq_id + '.peng', payload = cptype.encode())
 
 
     def send_penginfo(self, player1, player2, card):
-        with NATSClient(self.nats_addr) as client:
-            msg = str(player2.id) + '号碰掉了：' + card
-            client.publish(player1.uniq_id + '.penginfo', payload = msg.encode())
+        msg = str(player2.id) + '号碰掉了：' + card
+        self.client.publish(player1.uniq_id + '.penginfo', payload = msg.encode())
 
 
     def send_chigang(self, player, cptype):
@@ -157,14 +152,12 @@ class GameServer:
         向玩家发送可以吃杠的消息
         '''
         print('send_chigang')
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.chigang', payload = cptype.encode())
+        self.client.publish(player.uniq_id + '.chigang', payload = cptype.encode())
 
 
     def send_chiganginfo(self, player1, player2, card):
-        with NATSClient(self.nats_addr) as client:
-            msg = str(player2.id) + '号杠掉了：' + card
-            client.publish(player1.uniq_id + '.chiganginfo', payload = msg.encode())
+        msg = str(player2.id) + '号杠掉了：' + card
+        self.client.publish(player1.uniq_id + '.chiganginfo', payload = msg.encode())
 
 
     def send_bugang(self, player):
@@ -172,14 +165,12 @@ class GameServer:
         向玩家发送可以补杠的消息
         '''
         print('send_bugang')
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.bugang', payload = '可补杠'.encode())
+        self.client.publish(player.uniq_id + '.bugang', payload = '可补杠'.encode())
 
 
     def send_buganginfo(self, player1, player2, card):
-        with NATSClient(self.nats_addr) as client:
-            msg = str(player2.id) + '号补杠：' + card
-            client.publish(player1.uniq_id + '.buganginfo', payload = msg.encode())
+        msg = str(player2.id) + '号补杠：' + card
+        self.client.publish(player1.uniq_id + '.buganginfo', payload = msg.encode())
 
 
     def send_angang(self, player):
@@ -187,52 +178,45 @@ class GameServer:
         向玩家发送可以暗杠的消息
         '''
         print('send_angang')
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.angang', payload = '可暗杠'.encode())
+        self.client.publish(player.uniq_id + '.angang', payload = '可暗杠'.encode())
 
 
     def send_anganginfo(self, player1, player2):
-        with NATSClient(self.nats_addr) as client:
-            msg = str(player2.id) + '号暗杠！'
-            client.publish(player1.uniq_id + '.anganginfo', payload = msg.encode())
+        msg = str(player2.id) + '号暗杠！'
+        self.client.publish(player1.uniq_id + '.anganginfo', payload = msg.encode())
 
 
     def send_zimo(self, player):
         '''
         向玩家发送可以自摸的消息
         '''
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.zimo', payload = player.hu_kind.encode())
+        self.client.publish(player.uniq_id + '.zimo', payload = player.hu_kind.encode())
 
 
     def send_showhucards(self, p, player):
         id, handcards, pgcards, hu_kind = player.id, player.hand_cards, player.pg_cards, player.hu_kind
-        with NATSClient(self.nats_addr) as client:
-            msg = [str(id), handcards, pgcards, player.hu_kind]
-            client.publish(p.uniq_id + '.showhucards', payload = json.dumps(msg).encode())
+        msg = [str(id), handcards, pgcards, player.hu_kind]
+        self.client.publish(p.uniq_id + '.showhucards', payload = json.dumps(msg).encode())
 
 
     def send_dianpao(self, player):
         '''
         向玩家发送可以点炮的消息
         '''
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.dianpao', payload = player.hu_kind.encode())
+        self.client.publish(player.uniq_id + '.dianpao', payload = player.hu_kind.encode())
 
 
     def send_showdianpaocards(self, p, player):
         id, handcards, pgcards, hu_kind = player.id, player.hand_cards, player.pg_cards, player.hu_kind
-        with NATSClient(self.nats_addr) as client:
-            msg = [str(id), handcards, pgcards, hu_kind]
-            client.publish(p.uniq_id + '.showdianpaocards', payload = json.dumps(msg).encode())
+        msg = [str(id), handcards, pgcards, hu_kind]
+        self.client.publish(p.uniq_id + '.showdianpaocards', payload = json.dumps(msg).encode())
 
 
     def send_barkinfo(self, player, msg):
         '''
         广播玩家狗叫信息
         '''
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.barkinfo', payload = msg.encode())
+        self.client.publish(player.uniq_id + '.barkinfo', payload = msg.encode())
 
 
     def send_chigang_peng(self, player, cptype):
@@ -240,9 +224,7 @@ class GameServer:
         向玩家发送可吃杠可碰的消息
         '''
         print('send_chigang_peng')
-        print('send_chigang_peng')
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.chigang_peng', payload = cptype.encode())
+        self.client.publish(player.uniq_id + '.chigang_peng', payload = cptype.encode())
 
 
     def send_dianpao_peng(self, player, cptype):
@@ -250,8 +232,7 @@ class GameServer:
         向玩家发送可点炮可碰的消息
         '''
         print('send_dianpao_peng')
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.dianpao_peng', payload = cptype.encode())
+        self.client.publish(player.uniq_id + '.dianpao_peng', payload = cptype.encode())
 
 
     def send_dianpao_chigang(self, player, cptype):
@@ -259,8 +240,7 @@ class GameServer:
         向玩家发送可点炮可吃杠的消息
         '''
         print('send_dianpao_chigang')
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.dianpao_chigang', payload = cptype.encode())
+        self.client.publish(player.uniq_id + '.dianpao_chigang', payload = cptype.encode())
 
 
     def send_dianpao_chigang_peng(self, player, cptype):
@@ -268,8 +248,11 @@ class GameServer:
         向玩家发送可点炮可吃杠可碰的消息
         '''
         print('send_dianpao_chigang_peng')
-        with NATSClient(self.nats_addr) as client:
-            client.publish(player.uniq_id + '.dianpao_chigang_peng', payload = cptype.encode())
+        self.client.publish(player.uniq_id + '.dianpao_chigang_peng', payload = cptype.encode())
+
+
+    def send_gameover(self, player, msg):
+        self.client.publish(player.uniq_id + '.gameover', payload = msg.encode())
 
 
     def handle_bark(self, msg):
@@ -300,9 +283,6 @@ class GameServer:
             self.id_players_map[player.id] = player
 
             print('第' + str(player.id) + '位玩家"' + player.name + '"加入对局！')
-
-            # 激活状态，否则第一次send_isjoin会丢失
-            self.awaken_client(player)
             self.send_isjoin(player, '欢迎加入对局！')
 
             if len(self.players) == self.kind:  # 玩家数量达到，开始游戏
@@ -317,7 +297,6 @@ class GameServer:
                 #                  '万字': ['2万', '5万', '5万', '8万', '9万'], '字牌': ['北风', '北风'], '花牌': []}
                 # p3.hand_cards = {'筒子': ['9筒', '9筒'], '条子': ['1条', '9条'], '万字': ['3万', '3万', '4万', '4万', '8万'], '字牌': ['南风', '白板', '红中', '红中'], '花牌': []}
                 for p in self.players:  # 给每个对局中的玩家发送卡牌信息
-                    self.awaken_client(p)
                     self.send_cardsinfo(p)
                     self.send_showmycards(p)
 
@@ -325,8 +304,6 @@ class GameServer:
                 self.send_throwcard(curplayer)
         else:
             print('已达最大玩家数量')
-            # 激活状态，否则第一次send_isjoin会丢失
-            self.awaken_client(player)
             self.send_isjoin(player, '已达最大玩家数量！')
 
 
@@ -341,6 +318,11 @@ class GameServer:
 
         # 先摸后打
         type, card = curplayer.get_card(self.table_cards)
+        if type == 'empty':
+            msg = '流局！一群草包。'
+            for p in self.players:
+                self.send_gameover(p, msg)
+            return
         self.send_getcard(curplayer, card)
         self.send_cardsinfo(curplayer)  # 摸牌后给该玩家发送牌面信息
         self.send_showmycards(curplayer)
@@ -731,36 +713,35 @@ class GameServer:
 
     # 启动游戏服务器
     def run(self):
-        with NATSClient(self.nats_addr) as client:
-            # 订阅狗叫消息
-            client.subscribe("bark", callback = self.handle_bark)
-            # 订阅加入消息
-            client.subscribe("join", callback = self.handle_join)
-            # 订阅摸牌消息
-            client.subscribe("getcard", callback = self.handle_getcard)
-            # 订阅打牌消息
-            client.subscribe("throwcard", callback = self.handle_throwcard)
-            # 订阅碰牌消息
-            client.subscribe("peng", callback = self.handle_peng)
-            # 订阅吃杠消息
-            client.subscribe("chigang", callback = self.handle_chigang)
-            # 订阅补杠消息
-            client.subscribe("bugang", callback = self.handle_bugang)
-            # 订阅暗杠消息
-            client.subscribe("angang", callback = self.handle_angang)
-            # 订阅自摸消息
-            client.subscribe("zimo", callback = self.handle_zimo)
-            # 订阅点炮消息
-            client.subscribe("dianpao", callback = self.handle_dianpao)
-            # 订阅吃杠/碰消息
-            client.subscribe('chigang_peng', callback = self.handle_chigang_peng)
-            # 订阅点炮/碰消息
-            client.subscribe('dianpao_peng', callback = self.handle_dianpao_peng)
-            # 订阅点炮/吃杠消息
-            client.subscribe('dianpao_chigang', callback = self.handle_dianpao_chigang)
-            # 订阅点炮/吃杠/碰消息
-            client.subscribe('dianpao_chigang_peng', callback = self.handle_dianpao_chigang_peng)
-            client.wait()
+        # 订阅狗叫消息
+        self.client.subscribe("bark", callback = self.handle_bark)
+        # 订阅加入消息
+        self.client.subscribe("join", callback = self.handle_join)
+        # 订阅摸牌消息
+        self.client.subscribe("getcard", callback = self.handle_getcard)
+        # 订阅打牌消息
+        self.client.subscribe("throwcard", callback = self.handle_throwcard)
+        # 订阅碰牌消息
+        self.client.subscribe("peng", callback = self.handle_peng)
+        # 订阅吃杠消息
+        self.client.subscribe("chigang", callback = self.handle_chigang)
+        # 订阅补杠消息
+        self.client.subscribe("bugang", callback = self.handle_bugang)
+        # 订阅暗杠消息
+        self.client.subscribe("angang", callback = self.handle_angang)
+        # 订阅自摸消息
+        self.client.subscribe("zimo", callback = self.handle_zimo)
+        # 订阅点炮消息
+        self.client.subscribe("dianpao", callback = self.handle_dianpao)
+        # 订阅吃杠/碰消息
+        self.client.subscribe('chigang_peng', callback = self.handle_chigang_peng)
+        # 订阅点炮/碰消息
+        self.client.subscribe('dianpao_peng', callback = self.handle_dianpao_peng)
+        # 订阅点炮/吃杠消息
+        self.client.subscribe('dianpao_chigang', callback = self.handle_dianpao_chigang)
+        # 订阅点炮/吃杠/碰消息
+        self.client.subscribe('dianpao_chigang_peng', callback = self.handle_dianpao_chigang_peng)
+        self.client.wait()
 
 
 if __name__ == '__main__':
@@ -774,5 +755,5 @@ if __name__ == '__main__':
     # print(sup.distribute_cards())
     # sup.start()
     gs = GameServer()
-    gs.set_kind(2)
+    gs.set_kind(3)
     gs.run()

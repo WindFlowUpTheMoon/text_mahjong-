@@ -19,8 +19,9 @@ class Server:
 
     def send_msg(self, msg):
         self.client.publish('test', payload = msg.encode())
+        # self.client.close()
 
 
 server = Server()
 server.send_msg('hello')
-server.send_msg('world')
+# server.send_msg('world')

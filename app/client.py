@@ -30,7 +30,16 @@ class Client:
 
 
     def set_natsaddr(self, ip):
-        self.nats_addr = 'nats://'+str(ip)+':4222'
+        self.nats_addr = 'nats://'+str(ip)
+
+
+    def connect(self):
+        self.client = NATSClient(self.nats_addr)
+        self.client.connect()
+
+
+    def disconnect(self):
+        self.client.close()
 
 
     def get_help(self):
@@ -38,7 +47,7 @@ class Client:
             /****************************************************************************/
             输入 正整数n 代表要打掉的第n张手牌，输入 -n 代表要打掉的倒数第n张手牌，输入 x 打掉手里的花牌；
             输入 v 可查看其他牌面信息，包括牌堆剩余数量、其他玩家碰/杠后放桌上的牌、被打掉的牌；
-            输入其他的信息将向其他玩家将收到此广播信息；
+            输入其他的信息将向其他玩家广播此信息；
             /****************************************************************************/
             '''
         print(msg)
@@ -150,146 +159,127 @@ class Client:
 
     def send_bark(self, info):
         msg = (self.uniq_id + ',' + info).encode()
-        with NATSClient(self.nats_addr) as client:
-            client.publish('bark', payload = msg)
+        self.client.publish('bark', payload = msg)
 
 
     # 发送加入请求
     def send_join(self):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.name + ',' + self.uniq_id + ',' + self.ip).encode()
-            client.publish('join', payload = msg)
+        msg = (self.name + ',' + self.uniq_id + ',' + self.ip).encode()
+        self.client.publish('join', payload = msg)
 
 
     def send_throwcard(self, ind):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + str(ind)).encode()
-            client.publish('throwcard', payload = msg)
+        msg = (self.uniq_id + ',' + str(ind)).encode()
+        self.client.publish('throwcard', payload = msg)
 
 
     def send_peng(self, ifpeng, cptype):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + ifpeng + ',' + cptype).encode()
-            client.publish('peng', payload = msg)
+        msg = (self.uniq_id + ',' + ifpeng + ',' + cptype).encode()
+        self.client.publish('peng', payload = msg)
 
 
     def send_chigang(self, ifchigang, cptype):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + ifchigang + ',' + cptype).encode()
-            client.publish('chigang', payload = msg)
+        msg = (self.uniq_id + ',' + ifchigang + ',' + cptype).encode()
+        self.client.publish('chigang', payload = msg)
 
 
     def send_bugang(self, ifbugang):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + ifbugang).encode()
-            client.publish('bugang', payload = msg)
+        msg = (self.uniq_id + ',' + ifbugang).encode()
+        self.client.publish('bugang', payload = msg)
 
 
     def send_angang(self, ifangang):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + ifangang).encode()
-            client.publish('angang', payload = msg)
+        msg = (self.uniq_id + ',' + ifangang).encode()
+        self.client.publish('angang', payload = msg)
 
 
     def send_zimo(self, ifzimo):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + ifzimo).encode()
-            client.publish('zimo', payload = msg)
+        msg = (self.uniq_id + ',' + ifzimo).encode()
+        self.client.publish('zimo', payload = msg)
 
 
     def send_dianpao(self, ifdianpao):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + ifdianpao).encode()
-            client.publish('dianpao', payload = msg)
+        msg = (self.uniq_id + ',' + ifdianpao).encode()
+        self.client.publish('dianpao', payload = msg)
 
 
     def send_chigang_peng(self, flag, cptype):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
-            client.publish('chigang_peng', payload = msg)
+        msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
+        self.client.publish('chigang_peng', payload = msg)
 
 
     def send_dianpao_peng(self, flag, cptype):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
-            client.publish('dianpao_peng', payload = msg)
+        msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
+        self.client.publish('dianpao_peng', payload = msg)
 
 
     def send_dianpao_chigang(self, flag, cptype):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
-            client.publish('dianpao_chigang', payload = msg)
+        msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
+        self.client.publish('dianpao_chigang', payload = msg)
 
 
     def send_dianpao_chigang_peng(self, flag, cptype):
-        with NATSClient(self.nats_addr) as client:
-            msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
-            client.publish('dianpao_chigang_peng', payload = msg)
+        msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
+        self.client.publish('dianpao_chigang_peng', payload = msg)
 
 
     def receive(self):
-        with NATSClient(self.nats_addr) as client:
-            # 订阅玩家狗叫信息
-            client.subscribe(self.uniq_id + '.barkinfo', callback = self.handle_barkinfo)
-            # 订阅唤醒信息
-            client.subscribe('awake', callback = self.handle_awake)
-            # 订阅加入消息
-            client.subscribe(self.uniq_id + '.isjoin', callback = self.handle_isjoin)
-            # 订阅游戏开始消息
-            client.subscribe('startgame', callback = self.handle_startgame)
-            # 订阅更新卡牌消息
-            client.subscribe(self.uniq_id + '.cardsinfo', callback = self.handle_cardsinfo)
-            # 订阅打印手牌消息
-            client.subscribe(self.uniq_id + '.showmycards', callback = self.handle_showmycards)
-            # 订阅可否打牌消息
-            client.subscribe(self.uniq_id + '.throwcard', callback = self.handle_throwcard)
-            # 订阅打牌消息
-            client.subscribe(self.uniq_id + '.throwcardinfo', callback = self.throwcardinfo)
-            # 订阅摸牌消息
-            client.subscribe(self.uniq_id + '.getcard', callback = self.handle_getcard)
-            # 订阅可否碰牌消息
-            client.subscribe(self.uniq_id + '.peng', callback = self.handle_peng)
-            # 订阅碰牌消息
-            client.subscribe(self.uniq_id + '.penginfo', callback = self.handle_penginfo)
-            # 订阅是否吃杠消息
-            client.subscribe(self.uniq_id + '.chigang', callback = self.handle_chigang)
-            # 订阅吃杠消息
-            client.subscribe(self.uniq_id + '.chiganginfo', callback = self.handle_chiganginfo)
-            # 订阅是否补杠消息
-            client.subscribe(self.uniq_id + '.bugang', callback = self.handle_bugang)
-            # 订阅补杠消息
-            client.subscribe(self.uniq_id + '.buganginfo', callback = self.handle_buganginfo)
-            # 订阅是否暗杠消息
-            client.subscribe(self.uniq_id + '.angang', callback = self.handle_angang)
-            # 订阅暗杠消息
-            client.subscribe(self.uniq_id + '.anganginfo', callback = self.handle_anganginfo)
-            # 订阅自摸消息
-            client.subscribe(self.uniq_id + '.zimo', callback = self.handle_zimo)
-            # 订阅胡牌牌面信息
-            client.subscribe(self.uniq_id + '.showhucards', callback = self.handle_showhucards)
-            # 订阅点炮消息
-            client.subscribe(self.uniq_id + '.dianpao', callback = self.handle_dianpao)
-            # 订阅点炮牌面信息
-            client.subscribe(self.uniq_id + '.showdianpaocards', callback = self.handle_showdianpaocards)
-            # 订阅吃杠/碰消息
-            client.subscribe(self.uniq_id + '.chigang_peng', callback = self.handle_chigang_peng)
-            # 订阅点炮/碰消息
-            client.subscribe(self.uniq_id + '.dianpao_peng', callback = self.handle_dianpao_peng)
-            # 订阅点炮/吃杠消息
-            client.subscribe(self.uniq_id + '.dianpao_chigang', callback = self.handle_dianpao_chigang)
-            # 订阅点炮/吃杠/碰消息
-            client.subscribe(self.uniq_id + '.dianpao_chigang_peng', callback = self.handle_dianpao_chigang_peng)
-            client.wait()
+        # 订阅玩家狗叫信息
+        self.client.subscribe(self.uniq_id + '.barkinfo', callback = self.handle_barkinfo)
+        # 订阅加入消息
+        self.client.subscribe(self.uniq_id + '.isjoin', callback = self.handle_isjoin)
+        # 订阅游戏开始消息
+        self.client.subscribe('startgame', callback = self.handle_startgame)
+        # 订阅更新卡牌消息
+        self.client.subscribe(self.uniq_id + '.cardsinfo', callback = self.handle_cardsinfo)
+        # 订阅打印手牌消息
+        self.client.subscribe(self.uniq_id + '.showmycards', callback = self.handle_showmycards)
+        # 订阅可否打牌消息
+        self.client.subscribe(self.uniq_id + '.throwcard', callback = self.handle_throwcard)
+        # 订阅打牌消息
+        self.client.subscribe(self.uniq_id + '.throwcardinfo', callback = self.throwcardinfo)
+        # 订阅摸牌消息
+        self.client.subscribe(self.uniq_id + '.getcard', callback = self.handle_getcard)
+        # 订阅可否碰牌消息
+        self.client.subscribe(self.uniq_id + '.peng', callback = self.handle_peng)
+        # 订阅碰牌消息
+        self.client.subscribe(self.uniq_id + '.penginfo', callback = self.handle_penginfo)
+        # 订阅是否吃杠消息
+        self.client.subscribe(self.uniq_id + '.chigang', callback = self.handle_chigang)
+        # 订阅吃杠消息
+        self.client.subscribe(self.uniq_id + '.chiganginfo', callback = self.handle_chiganginfo)
+        # 订阅是否补杠消息
+        self.client.subscribe(self.uniq_id + '.bugang', callback = self.handle_bugang)
+        # 订阅补杠消息
+        self.client.subscribe(self.uniq_id + '.buganginfo', callback = self.handle_buganginfo)
+        # 订阅是否暗杠消息
+        self.client.subscribe(self.uniq_id + '.angang', callback = self.handle_angang)
+        # 订阅暗杠消息
+        self.client.subscribe(self.uniq_id + '.anganginfo', callback = self.handle_anganginfo)
+        # 订阅自摸消息
+        self.client.subscribe(self.uniq_id + '.zimo', callback = self.handle_zimo)
+        # 订阅胡牌牌面信息
+        self.client.subscribe(self.uniq_id + '.showhucards', callback = self.handle_showhucards)
+        # 订阅点炮消息
+        self.client.subscribe(self.uniq_id + '.dianpao', callback = self.handle_dianpao)
+        # 订阅点炮牌面信息
+        self.client.subscribe(self.uniq_id + '.showdianpaocards', callback = self.handle_showdianpaocards)
+        # 订阅吃杠/碰消息
+        self.client.subscribe(self.uniq_id + '.chigang_peng', callback = self.handle_chigang_peng)
+        # 订阅点炮/碰消息
+        self.client.subscribe(self.uniq_id + '.dianpao_peng', callback = self.handle_dianpao_peng)
+        # 订阅点炮/吃杠消息
+        self.client.subscribe(self.uniq_id + '.dianpao_chigang', callback = self.handle_dianpao_chigang)
+        # 订阅点炮/吃杠/碰消息
+        self.client.subscribe(self.uniq_id + '.dianpao_chigang_peng', callback = self.handle_dianpao_chigang_peng)
+        # 订阅游戏结束消息
+        self.client.subscribe(self.uniq_id + '.gameover', callback = self.handle_gameover)
+        self.client.wait()
 
 
     def handle_barkinfo(self, msg):
         id, info = msg.payload.decode().split(',')
         print(id+'号：'+info)
-
-
-    def handle_awake(self, msg):
-        msg = msg.payload.decode()
-        pass
 
 
     def handle_isjoin(self, msg):
@@ -301,7 +291,8 @@ class Client:
             print('正在等待其他玩家加入对局。。。')
             sleep(1)
         else:
-            sys.exit()
+            print('hhhh')
+            self.disconnect()
 
 
     def handle_startgame(self, msg):
@@ -496,6 +487,11 @@ class Client:
         self.send_dianpao_chigang_peng(flag, cptype)
 
 
+    def handle_gameover(self, msg):
+        msg = msg.payload.decode()
+        print(msg)
+
+
 def rejoin(curpath):
     '''
     断线重连
@@ -517,6 +513,7 @@ def start(curpath):
     ip = input('输入目标ip：')
     if ip != 'n':
         c.set_natsaddr(ip)
+    c.connect()
 
     try:
         c.send_join()
