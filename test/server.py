@@ -2,9 +2,25 @@ from pynats import NATSClient
 from time import sleep
 
 
-def send_hello():
-    with NATSClient('nats://localhost:4222') as client:
-        client.publish('test',payload='hello'.encode())
-        client.wait()
+class Server:
+    def __init__(self):
+        self.addr = 'nats://localhost:4222'
+        self.create_connection()
 
-send_hello()
+
+    def create_connection(self):
+        self.client = NATSClient('nats://localhost:4222')
+        self.client.connect()
+
+
+    def close_connection(self):
+        self.client.close()
+
+
+    def send_msg(self, msg):
+        self.client.publish('test', payload = msg.encode())
+
+
+server = Server()
+server.send_msg('hello')
+server.send_msg('world')

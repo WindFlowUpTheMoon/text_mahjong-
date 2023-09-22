@@ -428,36 +428,34 @@ class Client:
 
 
     def handle_zimo(self, msg):
-        msg = msg.payload.decode()
-        if msg == 'zimo':
-            while True:
-                ifzimo = input('自摸？(输入y/n) ')
-                if ifzimo in ('y', 'n', 'Y', 'N'):
-                    break
-            self.send_zimo(ifzimo)
+        hu_kind = msg.payload.decode()
+        while True:
+            ifzimo = input('自摸'+hu_kind+'？(输入y/n) ')
+            if ifzimo in ('y', 'n', 'Y', 'N'):
+                break
+        self.send_zimo(ifzimo)
 
 
     def handle_showhucards(self, msg):
         msg = msg.payload.decode()
-        id, handcards, pgcards = json.loads(msg)
-        print(id+'号自摸了！\n胡牌牌面信息：')
+        id, handcards, pgcards, hu_kind = json.loads(msg)
+        print(hu_kind+'!\n'+id+'号自摸了！\n胡牌牌面信息：')
         self.print_playercards(pgcards, handcards)
 
 
     def handle_dianpao(self, msg):
-        msg = msg.payload.decode()
-        if msg == 'dianpao':
-            while True:
-                ifdianpao = input('点炮？(输入y/n) ')
-                if ifdianpao in ('y', 'n', 'Y', 'N'):
-                    break
-            self.send_dianpao(ifdianpao)
+        hu_kind = msg.payload.decode()
+        while True:
+            ifdianpao = input('点炮'+hu_kind+'？(输入y/n) ')
+            if ifdianpao in ('y', 'n', 'Y', 'N'):
+                break
+        self.send_dianpao(ifdianpao)
 
 
     def handle_showdianpaocards(self, msg):
         msg = msg.payload.decode()
-        id, handcards, pgcards = json.loads(msg)
-        print(id + '号点炮了！\n胡牌牌面信息：')
+        id, handcards, pgcards, hu_kind = json.loads(msg)
+        print(hu_kind+'!\n'+id + '号点炮了！\n胡牌牌面信息：')
         self.print_playercards(pgcards, handcards)
 
 

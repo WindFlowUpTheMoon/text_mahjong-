@@ -484,6 +484,7 @@ class GameServer:
         uniq_id, ifangang = msg.payload.decode().split(',')
         player = self.uniqid_players_map[uniq_d]
         if ifangang in ('y','Y'):
+            player.angang_num+=1
             # 更新牌面信息
             player.angang(self.angang_card, self.angang_type, self.players)
             for p in self.players:
