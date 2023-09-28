@@ -158,7 +158,7 @@ class Client:
 
 
     def send_bark(self, info):
-        msg = (self.uniq_id + ',' + info).encode()
+        msg = (self.uniq_id + './?,*' + info).encode()
         self.client.publish('bark', payload = msg)
 
 
@@ -331,7 +331,7 @@ class Client:
                         print('\n牌堆剩余：' + str(self.tablecards_num))
                         for id, pgcards in self.otherplayers_cards:
                             print(str(id) + '号玩家：', pgcards)
-                        print('牌面：')
+                        print('被打掉的牌：')
                         self.print_leftcards(self.leftcards)
                         print()
                     elif inp in ('h','H','help','Help','HELP'):
@@ -510,7 +510,7 @@ def start(curpath):
     with open(filename + '_clientInfo.txt', 'w', encoding = 'utf-8') as f:
         f.write(c.name + ',' + c.uniq_id)
 
-    ip = input('输入目标ip：')
+    ip = input('文字麻将\n输入目标ip：')
     if ip != 'n':
         c.set_natsaddr(ip)
     c.connect()
