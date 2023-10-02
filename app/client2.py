@@ -1,5 +1,6 @@
 from client import start
 from os import path
+from traceback import print_exc
 
 
 if __name__ == '__main__':

@@ -531,4 +531,5 @@ if __name__ == '__main__':
         start(curpath)
     except:
         print_exc()
+        sleep(30)
     # rejoin(curpath)   #   如果断线了运行此命令
