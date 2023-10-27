@@ -1,5 +1,5 @@
 from random import shuffle
-from utils import LastLeftCard, handcards2numlist
+from app.utils import LastLeftCard, handcards2numlist
 from collections import Counter
 
 
@@ -167,11 +167,12 @@ class Player:
                 player.money -= 1
 
 
-    def is_angang(self, card_got, type):
+    def is_angang(self, type):
         '''
         判断是否可暗杠
         '''
         c = Counter(self.hand_cards[type])
+
         if c[card_got] == 4:
             return True
         return False

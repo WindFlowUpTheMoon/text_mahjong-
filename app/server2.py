@@ -1,6 +1,6 @@
 from pynats import NATSClient
-from base import Mahjong, Player
-from utils import *
+from app.base import Mahjong, Player
+from app.utils import *
 import json
 from copy import deepcopy
 from time import sleep
@@ -26,6 +26,7 @@ class GameServer:
         self.curplayer_id = 1  # 当前轮到摸牌的玩家id
         self.uniqid_players_map = {}  # uniq_id与玩家的映射
         self.id_players_map = {}  # id与玩家的映射
+        self.reach_max_playersNum = False
         self.subscribe()
 
 
@@ -279,12 +280,12 @@ class GameServer:
         self.reset()
         self.send_startgame()
         self.distribute_cards()  # 发牌
-        self.table_cards[0]='西风'
-        p1,p2 = self.players
-        p1.hand_cards = {'筒子': [],
-                         '条子': ['1条', '2条', '3条', '4条', '5条', '6条', '8条', '8条'], '万字': [],
-                         '字牌': ['东风', '东风', '红中', '红中', '红中','西风'], '花牌': []}
-        p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
+        # self.table_cards[0]='西风'
+        # p1,p2 = self.players
+        # p1.hand_cards = {'筒子': [],
+        #                  '条子': ['1条', '2条', '3条', '4条', '5条', '6条', '8条', '8条'], '万字': [],
+        #                  '字牌': ['东风', '东风', '红中', '红中', '红中','西风'], '花牌': []}
+        # p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
 
         # p3.hand_cards = {'筒子': [],
         #           '条子': ['1条', '2条', '3条', '4条', '5条','6条', '7条', '9条'], '万字': [], '字牌': ['东风','东风', '北风', '北风', '北风'], '花牌': []}
@@ -302,7 +303,7 @@ class GameServer:
         uniq_id, info = msg.payload.decode().split('./?,*')
         bark_player = self.uniqid_players_map[uniq_id]
         print(str(bark_player.id) + '号:' + info)
-        msg = str(bark_player.id) + ',' + info
+        msg = str(bark_player.id) + './?,*' + info
         for p in self.players:
             if p != bark_player:
                 self.send_barkinfo(p, msg)
@@ -329,6 +330,7 @@ class GameServer:
                 self.init_start()
         else:
             print('已达最大玩家数量')
+            self.reach_max_playersNum = True
             self.send_isjoin(player, '已达最大玩家数量！')
 
 
@@ -405,7 +407,7 @@ class GameServer:
                 if p == player:
                     self.send_showmycards(player)
 
-            one_flag = False  # 判断循环里是否出现过点炮/吃杠/碰
+            one_flag = True  # 判断循环里是否出现过点炮/吃杠/碰
             for p in self.players:
                 tmp_list = [0, 0, 0]  # 分别代表点炮与否、吃杠与否、碰与否
                 if self.last_leftcard.player != p:
@@ -437,27 +439,25 @@ class GameServer:
                         tmp_list[2] = 1
 
                     if tmp_list == [0, 0, 1]:
-                        one_flag = True
                         self.send_peng(p, cp_type)
                     elif tmp_list == [0, 1, 0]:
-                        one_flag = True
                         self.send_chigang(p, cp_type)
                     elif tmp_list == [1, 0, 0]:
-                        one_flag = True
                         self.send_dianpao(p)
                     elif tmp_list == [0, 1, 1]:
-                        one_flag = True
                         self.send_chigang_peng(p, cp_type)
                     elif tmp_list == [1, 0, 1]:
-                        one_flag = True
                         self.send_dianpao_peng(p, cp_type)
                     elif tmp_list == [1, 1, 0]:
-                        one_flag = True
                         self.send_dianpao_chigang(p, cp_type)
                     elif tmp_list == [1, 1, 1]:
-                        one_flag = True
                         self.send_dianpao_chigang_peng(p, cp_type)
+                    else:
+                        one_flag = False
                     print('tmp_list:', tmp_list)
+                else:
+                    # 暗杠判断
+                    angang_return = p.is_angang(card, type)
 
             # 无碰无杠无点炮则轮到下一个玩家
             if not one_flag:

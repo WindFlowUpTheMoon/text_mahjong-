@@ -278,7 +278,7 @@ class Client:
 
 
     def handle_barkinfo(self, msg):
-        id, info = msg.payload.decode().split(',')
+        id, info = msg.payload.decode().split('./?,*')
         print(id+'号：'+info)
 
 

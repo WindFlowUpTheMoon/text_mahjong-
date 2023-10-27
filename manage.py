@@ -1,21 +1,23 @@
 import os
 import threading
+from app.server2 import GameServer
+from time import sleep
 
-
-curpath = os.getcwd()
-print(curpath)
 
 def nats_server():
+    curpath = os.getcwd()
+    print(curpath)
     natsserver_path = curpath + r'\nats-server.exe'
     os.system(natsserver_path)
 
 
-def game_server():
-    os.system('python ./app/server2.py')
+# 服务多启
+def server_manage():
+    gs = GameServer()
 
 
 thread1 = threading.Thread(target =  nats_server)
-thread2 = threading.Thread(target = game_server)
+thread2 = threading.Thread(target = server_manage)
 
 thread1.start()
 thread2.start()
