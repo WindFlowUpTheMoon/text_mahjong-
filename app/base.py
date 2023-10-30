@@ -45,6 +45,7 @@ class Player:
         self.angang_num = 0  # 暗杠的次数
         self.money = 0  # 筹码
         self.hu_kind = None  # 胡牌类型
+        self.first_getcard = True
 
 
     def get_card(self, table_cards):
@@ -167,14 +168,15 @@ class Player:
                 player.money -= 1
 
 
-    def is_angang(self, type):
+    def is_angang(self):
         '''
         判断是否可暗杠
         '''
-        c = Counter(self.hand_cards[type])
-
-        if c[card_got] == 4:
-            return True
+        for type, cards in self.hand_cards.items():
+            c = Counter(self.hand_cards[type])
+            for card, num in c.items():
+                if num == 4:
+                    return type, card
         return False
 
 

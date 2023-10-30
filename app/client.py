@@ -272,6 +272,10 @@ class Client:
         self.client.subscribe(self.uniq_id + '.dianpao_chigang', callback = self.handle_dianpao_chigang)
         # 订阅点炮/吃杠/碰消息
         self.client.subscribe(self.uniq_id + '.dianpao_chigang_peng', callback = self.handle_dianpao_chigang_peng)
+        # 订阅天胡消息
+        self.client.subscribe(self.uniq_id + '.tianhu', callback = self.handle_tianhu)
+        # 订阅地胡消息
+        self.client.subscribe(self.uniq_id + '.dihu', callback = self.handle_dihu)
         # 订阅游戏结束消息
         self.client.subscribe(self.uniq_id + '.gameover', callback = self.handle_gameover)
         self.client.wait()
@@ -298,6 +302,16 @@ class Client:
     def handle_startgame(self, msg):
         msg = msg.payload.decode()
         print(msg + '\n')
+
+
+    def handle_tianhu(self, msg):
+        msg = msg.payload.decode()
+        print(msg)
+
+
+    def handle_dihu(self, msg):
+        msg = msg.payload.decode()
+        print(msg)
 
 
     def handle_cardsinfo(self, msg):

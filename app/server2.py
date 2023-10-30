@@ -60,6 +60,7 @@ class GameServer:
             p.pg_num = 0  # 碰、杠的次数
             p.angang_num = 0  # 暗杠的次数
             p.hu_kind = None  # 胡牌类型
+            p.first_getcard = True
             self.send_cardsinfo(p)
 
 
@@ -269,6 +270,14 @@ class GameServer:
         self.client.publish(player.uniq_id + '.dianpao_chigang_peng', payload = cptype.encode())
 
 
+    def send_tianhu(self, player):
+        self.client.publish(player.uniq_id + '.tianhu', payload = '天胡'.encode())
+
+
+    def send_dihu(self, player):
+        self.client.publish(player.uniq_id + '.dihu', payload = '地胡'.encode())
+
+
     def send_gameover(self, player, msg):
         self.client.publish(player.uniq_id + '.gameover', payload = msg.encode())
 
@@ -280,19 +289,34 @@ class GameServer:
         self.reset()
         self.send_startgame()
         self.distribute_cards()  # 发牌
-        # self.table_cards[0]='西风'
-        # p1,p2 = self.players
-        # p1.hand_cards = {'筒子': [],
-        #                  '条子': ['1条', '2条', '3条', '4条', '5条', '6条', '8条', '8条'], '万字': [],
-        #                  '字牌': ['东风', '东风', '红中', '红中', '红中','西风'], '花牌': []}
-        # p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
+        self.table_cards[:2]=['西风','西风']
+        p1,p2 = self.players
+        p1.hand_cards = {'筒子': [],
+                         '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
+                         '字牌': ['东风', '东风','东风', '红中', '红中', '红中'], '花牌': []}
+        p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
 
         # p3.hand_cards = {'筒子': [],
         #           '条子': ['1条', '2条', '3条', '4条', '5条','6条', '7条', '9条'], '万字': [], '字牌': ['东风','东风', '北风', '北风', '北风'], '花牌': []}
         for p in self.players:  # 给每个对局中的玩家发送卡牌信息
             self.send_cardsinfo(p)
             self.send_showmycards(p)
+
         curplayer = self.id_players_map[self.curplayer_id]  # 轮到打牌的玩家
+        # 开局天胡/暗杠
+        if curplayer.is_hu(curplayer.hand_cards):
+            curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
+            for p in self.players:
+                self.send_tianhu(p)
+                # self.send_cardsinfo(p)
+                self.send_showhucards(p, curplayer)
+            sleep(10)
+            self.init_start()
+            return
+        if curplayer.is_angang():
+            self.send_angang(curplayer)
+            return
+
         self.send_throwcard(curplayer)
 
 
@@ -357,16 +381,23 @@ class GameServer:
         # 判断是否补杠
         bugang_return = curplayer.is_bugang(card)
         # 判断是否暗杠
-        angang_return = curplayer.is_angang(card, type)
+        angang_return = curplayer.is_angang()
         # 判断是否自摸
         hu_return = False
         if not curplayer.hand_cards['花牌']:
             hu_return = curplayer.is_hu(curplayer.hand_cards)
             if hu_return:
                 curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
+                if curplayer.first_getcard:
+                    for p in self.players:
+                        self.send_dihu(p)
+                        self.send_showhucards(p, curplayer)
+                    sleep(10)
+                    self.init_start()
                 self.send_zimo(curplayer)
                 print('currrrrrrrrrr',curplayer.hand_cards)
                 return
+        curplayer.first_getcard = False
 
         print(bugang_return, angang_return, hu_return)
 
@@ -376,8 +407,7 @@ class GameServer:
             self.send_bugang(curplayer)
             return
         if angang_return:
-            self.angang_card = card
-            self.angang_type = type
+            self.angang_type, self.angang_card = angang_return
             self.send_angang(curplayer)
             return
 
@@ -455,9 +485,6 @@ class GameServer:
                     else:
                         one_flag = False
                     print('tmp_list:', tmp_list)
-                else:
-                    # 暗杠判断
-                    angang_return = p.is_angang(card, type)
 
             # 无碰无杠无点炮则轮到下一个玩家
             if not one_flag:
