@@ -6,22 +6,6 @@ from pynats import NATSClient
 from app.base import Player
 
 
-def nats_server():
-    curpath = os.getcwd()
-    print(curpath)
-    natsserver_path = curpath + r'\nats-server.exe'
-    os.system(natsserver_path)
-
-
-def new_gameserver(server_id, players):
-    uniqid_players_map, id_players_map = dict(), dict()
-    for i, player in enumerate(players):
-        uniqid_players_map[player.uniq_id] = player
-        player.id = i+1
-        id_players_map[i+1] = player
-    gs = GameServer(server_id, players, uniqid_players_map, id_players_map)
-
-
 class Manager:
     def __init__(self):
         self.nats_addr = "nats://localhost:4222"
@@ -46,6 +30,15 @@ class Manager:
         self.client.publish(str(server_id) + '.startserver', payload = 'start'.encode())
 
 
+    def new_gameserver(self, server_id, players):
+        uniqid_players_map, id_players_map = dict(), dict()
+        for i, player in enumerate(players):
+            uniqid_players_map[player.uniq_id] = player
+            player.id = i + 1
+            id_players_map[i + 1] = player
+        gs = GameServer(server_id, players, uniqid_players_map, id_players_map)
+
+
     def subscribe(self):
         self.client.subscribe('join', callback = self.handle_join)
         self.client.wait()
@@ -62,11 +55,18 @@ class Manager:
             # 新建一个子线程运行game_server
             ind = self.players_num // self.game_type
             players = self.players[(ind-1)*self.game_type: ind*self.game_type]
-            thread = threading.Thread(target = new_gameserver, args = (self.server_id, players,))
+            thread = threading.Thread(target = self.new_gameserver, args = (self.server_id, players,))
             thread.start()
             sleep(1)    # 确保线程创建后再发送服务启动消息
             self.send_startserver(self.server_id)
             self.server_id += 1
+
+
+def nats_server():
+    curpath = os.getcwd()
+    print(curpath)
+    natsserver_path = curpath + r'\nats-server.exe'
+    os.system(natsserver_path)
 
 
 def server_manage():

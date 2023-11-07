@@ -18,6 +18,7 @@ class Client:
     def __init__(self, name = '匿名'):
         self.name = name
         self.nats_addr = 'nats://localhost:4222'
+        self.server_id = None
         self.ip = str(socket.gethostbyname(socket.gethostname()))
         self.uniq_id = self.generate_randomId()
         # print(self.uniq_id)
@@ -165,67 +166,69 @@ class Client:
 
     def send_bark(self, info):
         msg = (self.uniq_id + './?,*' + info).encode()
-        self.client.publish('bark', payload = msg)
+        self.client.publish(str(self.server_id) + '.bark', payload = msg)
 
 
     def send_throwcard(self, ind):
         msg = (self.uniq_id + ',' + str(ind)).encode()
-        self.client.publish('throwcard', payload = msg)
+        self.client.publish(str(self.server_id) + '.throwcard', payload = msg)
 
 
     def send_peng(self, ifpeng, cptype):
         msg = (self.uniq_id + ',' + ifpeng + ',' + cptype).encode()
-        self.client.publish('peng', payload = msg)
+        self.client.publish(str(self.server_id) + '.peng', payload = msg)
 
 
     def send_chigang(self, ifchigang, cptype):
         msg = (self.uniq_id + ',' + ifchigang + ',' + cptype).encode()
-        self.client.publish('chigang', payload = msg)
+        self.client.publish(str(self.server_id) + '.chigang', payload = msg)
 
 
     def send_bugang(self, ifbugang):
         msg = (self.uniq_id + ',' + ifbugang).encode()
-        self.client.publish('bugang', payload = msg)
+        self.client.publish(str(self.server_id) + '.bugang', payload = msg)
 
 
     def send_angang(self, ifangang):
         msg = (self.uniq_id + ',' + ifangang).encode()
-        self.client.publish('angang', payload = msg)
+        self.client.publish(str(self.server_id) + '.angang', payload = msg)
 
 
     def send_zimo(self, ifzimo):
         msg = (self.uniq_id + ',' + ifzimo).encode()
-        self.client.publish('zimo', payload = msg)
+        self.client.publish(str(self.server_id) + '.zimo', payload = msg)
 
 
     def send_dianpao(self, ifdianpao):
         msg = (self.uniq_id + ',' + ifdianpao).encode()
-        self.client.publish('dianpao', payload = msg)
+        self.client.publish(str(self.server_id) + '.dianpao', payload = msg)
 
 
     def send_chigang_peng(self, flag, cptype):
         msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
-        self.client.publish('chigang_peng', payload = msg)
+        self.client.publish(str(self.server_id) + '.chigang_peng', payload = msg)
 
 
     def send_dianpao_peng(self, flag, cptype):
         msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
-        self.client.publish('dianpao_peng', payload = msg)
+        self.client.publish(str(self.server_id) + '.dianpao_peng', payload = msg)
 
 
     def send_dianpao_chigang(self, flag, cptype):
         msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
-        self.client.publish('dianpao_chigang', payload = msg)
+        self.client.publish(str(self.server_id) + '.dianpao_chigang', payload = msg)
 
 
     def send_dianpao_chigang_peng(self, flag, cptype):
         msg = (self.uniq_id + ',' + flag + ',' + cptype).encode()
-        self.client.publish('dianpao_chigang_peng', payload = msg)
+        self.client.publish(str(self.server_id) + '.dianpao_chigang_peng', payload = msg)
 
 
     def receive(self):
         # 订阅游戏开始消息
         self.client.subscribe(self.uniq_id + '.gamestart', callback = self.handle_gamestart)
+        # 订阅服务id消息
+        self.client.subscribe(self.uniq_id + '.serverid', callback = self.handle_serverid)
         # 订阅玩家狗叫信息
         self.client.subscribe(self.uniq_id + '.barkinfo', callback = self.handle_barkinfo)
         # 订阅更新卡牌消息
@@ -283,6 +286,11 @@ class Client:
         msg = msg.payload.decode()
         print('对局开始！')
         print('输入时输入 h 或 help 可查看帮助文档')
+
+
+    def handle_serverid(self, msg):
+        self.server_id = msg.payload.decode()
+        print('分配到的服务器ID:', self.server_id)
 
 
     def handle_barkinfo(self, msg):

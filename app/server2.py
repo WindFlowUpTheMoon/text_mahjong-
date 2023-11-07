@@ -270,11 +270,17 @@ class GameServer:
         self.client.publish(player.uniq_id + '.gameover', payload = msg.encode())
 
 
+    def send_serverid(self, player, msg):
+        self.client.publish(player.uniq_id + '.serverid', payload = msg.encode())
+
+
     def init_start(self):
         '''
         初始开始游戏
         '''
         print('init_start')
+        for player in self.players:
+            self.send_serverid(player, str(self.server_id))
         self.reset()
         self.distribute_cards()  # 发牌
         # self.table_cards[:3]=['东风','东风','西风']
@@ -293,15 +299,16 @@ class GameServer:
         curplayer = self.id_players_map[self.curplayer_id]  # 轮到打牌的玩家
         print('curplayer id:', curplayer.id)
         # 开局天胡/暗杠
-        if curplayer.is_hu(curplayer.hand_cards):
-            curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
-            for p in self.players:
-                self.send_tianhu(p)
-                # self.send_cardsinfo(p)
-                self.send_showhucards(p, curplayer)
-            sleep(10)
-            self.init_start()
-            return
+        if not curplayer.hand_cards['花牌']:
+            if curplayer.is_hu(curplayer.hand_cards):
+                curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
+                for p in self.players:
+                    self.send_tianhu(p)
+                    # self.send_cardsinfo(p)
+                    self.send_showhucards(p, curplayer)
+                sleep(10)
+                self.init_start()
+                return
         if curplayer.is_angang():
             self.send_angang(curplayer)
             return
@@ -770,31 +777,31 @@ class GameServer:
         # 订阅服务启动消息
         self.client.subscribe(str(self.server_id) + '.startserver', callback = self.handle_startserver)
         # 订阅狗叫消息
-        self.client.subscribe("bark", callback = self.handle_bark)
+        self.client.subscribe(str(self.server_id) + ".bark", callback = self.handle_bark)
         # 订阅摸牌消息
-        self.client.subscribe("getcard", callback = self.handle_getcard)
+        self.client.subscribe(str(self.server_id) + ".getcard", callback = self.handle_getcard)
         # 订阅打牌消息
-        self.client.subscribe("throwcard", callback = self.handle_throwcard)
+        self.client.subscribe(str(self.server_id) + ".throwcard", callback = self.handle_throwcard)
         # 订阅碰牌消息
-        self.client.subscribe("peng", callback = self.handle_peng)
+        self.client.subscribe(str(self.server_id) + ".peng", callback = self.handle_peng)
         # 订阅吃杠消息
-        self.client.subscribe("chigang", callback = self.handle_chigang)
+        self.client.subscribe(str(self.server_id) + ".chigang", callback = self.handle_chigang)
         # 订阅补杠消息
-        self.client.subscribe("bugang", callback = self.handle_bugang)
+        self.client.subscribe(str(self.server_id) + ".bugang", callback = self.handle_bugang)
         # 订阅暗杠消息
-        self.client.subscribe("angang", callback = self.handle_angang)
+        self.client.subscribe(str(self.server_id) + ".angang", callback = self.handle_angang)
         # 订阅自摸消息
-        self.client.subscribe("zimo", callback = self.handle_zimo)
+        self.client.subscribe(str(self.server_id) + ".zimo", callback = self.handle_zimo)
         # 订阅点炮消息
-        self.client.subscribe("dianpao", callback = self.handle_dianpao)
+        self.client.subscribe(str(self.server_id) + ".dianpao", callback = self.handle_dianpao)
         # 订阅吃杠/碰消息
-        self.client.subscribe('chigang_peng', callback = self.handle_chigang_peng)
+        self.client.subscribe(str(self.server_id) + '.chigang_peng', callback = self.handle_chigang_peng)
         # 订阅点炮/碰消息
-        self.client.subscribe('dianpao_peng', callback = self.handle_dianpao_peng)
+        self.client.subscribe(str(self.server_id) + '.dianpao_peng', callback = self.handle_dianpao_peng)
         # 订阅点炮/吃杠消息
-        self.client.subscribe('dianpao_chigang', callback = self.handle_dianpao_chigang)
+        self.client.subscribe(str(self.server_id) + '.dianpao_chigang', callback = self.handle_dianpao_chigang)
         # 订阅点炮/吃杠/碰消息
-        self.client.subscribe('dianpao_chigang_peng', callback = self.handle_dianpao_chigang_peng)
+        self.client.subscribe(str(self.server_id) + '.dianpao_chigang_peng', callback = self.handle_dianpao_chigang_peng)
         self.client.wait()
 
 
