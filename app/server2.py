@@ -300,8 +300,12 @@ class GameServer:
         print('curplayer id:', curplayer.id)
         # 开局天胡/暗杠
         if not curplayer.hand_cards['花牌']:
-            if curplayer.is_hu(curplayer.hand_cards):
-                curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
+            hu_return = curplayer.is_hu(curplayer.hand_cards)
+            if hu_return:
+                if hu_return != True:
+                    curplayer.hu_kind = hu_return
+                else:
+                    curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
                 for p in self.players:
                     self.send_tianhu(p)
                     # self.send_cardsinfo(p)
@@ -384,7 +388,10 @@ class GameServer:
         if not curplayer.hand_cards['花牌']:
             hu_return = curplayer.is_hu(curplayer.hand_cards)
             if hu_return:
-                curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
+                if hu_return != True:
+                    curplayer.hu_kind = hu_kind
+                else:
+                    curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
                 if curplayer.first_getcard:
                     for p in self.players:
                         self.send_dihu(p)
@@ -448,11 +455,16 @@ class GameServer:
                     tmp_handcards[card_type].sort()
                     print('carddddddd:',tmp_handcards, p.id)
 
-                    if not tmp_handcards['花牌'] and p.is_hu(tmp_handcards):
-                        p.hu_kind = p.kind_check(tmp_handcards, p.pg_cards, p.angang_num)
-                        print(p.hu_kind)
-                        if p.hu_kind != '鸡胡':
-                            tmp_list[0] = 1
+                    if not tmp_handcards['花牌']:
+                        hu_return = p.is_hu(tmp_handcards)
+                        if hu_return:
+                            if hu_return != True:
+                                p.hu_kind = hu_return
+                            else:
+                                p.hu_kind = p.kind_check(tmp_handcards, p.pg_cards, p.angang_num)
+                            print(p.hu_kind)
+                            if p.hu_kind != '鸡胡':
+                                tmp_list[0] = 1
 
                     cp_type = p.is_chigang(self.last_leftcard)
                     if cp_type:
