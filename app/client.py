@@ -21,7 +21,6 @@ class Client:
         self.ip = str(socket.gethostbyname(socket.gethostname()))
         self.uniq_id = self.generate_randomId()
         # print(self.uniq_id)
-        self.isjoin = False
         self.hand_cards = {}
         self.pg_cards = []
         self.otherplayers_cards = []
@@ -86,8 +85,8 @@ class Client:
         '''
         生成玩家的随机唯一id
         '''
-        t = datetime.now().strftime('%d%H%M%S')
-        rn = randint(1, 100)
+        t = datetime.now().strftime('%H%M%S')
+        rn = randint(1, 1000)
         return t + str(rn)
 
 
@@ -157,15 +156,16 @@ class Client:
         # print('1111',self.handcards_num)
 
 
+    # 发送加入请求
+    def send_join(self):
+        print('正在等待其他玩家加入游戏。。。')
+        msg = (self.name + ',' + self.uniq_id + ',' + self.ip).encode()
+        self.client.publish('join', payload = msg)
+
+
     def send_bark(self, info):
         msg = (self.uniq_id + './?,*' + info).encode()
         self.client.publish('bark', payload = msg)
-
-
-    # 发送加入请求
-    def send_join(self):
-        msg = (self.name + ',' + self.uniq_id + ',' + self.ip).encode()
-        self.client.publish('join', payload = msg)
 
 
     def send_throwcard(self, ind):
@@ -224,12 +224,10 @@ class Client:
 
 
     def receive(self):
+        # 订阅游戏开始消息
+        self.client.subscribe(self.uniq_id + '.gamestart', callback = self.handle_gamestart)
         # 订阅玩家狗叫信息
         self.client.subscribe(self.uniq_id + '.barkinfo', callback = self.handle_barkinfo)
-        # 订阅加入消息
-        self.client.subscribe(self.uniq_id + '.isjoin', callback = self.handle_isjoin)
-        # 订阅游戏开始消息
-        self.client.subscribe('startgame', callback = self.handle_startgame)
         # 订阅更新卡牌消息
         self.client.subscribe(self.uniq_id + '.cardsinfo', callback = self.handle_cardsinfo)
         # 订阅打印手牌消息
@@ -281,27 +279,15 @@ class Client:
         self.client.wait()
 
 
+    def handle_gamestart(self, msg):
+        msg = msg.payload.decode()
+        print('对局开始！')
+        print('输入时输入 h 或 help 可查看帮助文档')
+
+
     def handle_barkinfo(self, msg):
         id, info = msg.payload.decode().split('./?,*')
         print(id+'号：'+info)
-
-
-    def handle_isjoin(self, msg):
-        msg = msg.payload.decode()
-        print(msg)
-        if msg == '欢迎加入对局！':
-            print('输入时输入 h 或 help 可查看帮助文档')
-            self.isjoin = True
-            print('正在等待其他玩家加入对局。。。')
-            sleep(1)
-        else:
-            print('hhhh')
-            self.disconnect()
-
-
-    def handle_startgame(self, msg):
-        msg = msg.payload.decode()
-        print(msg + '\n')
 
 
     def handle_tianhu(self, msg):
@@ -332,36 +318,35 @@ class Client:
 
     def handle_throwcard(self, msg):
         msg = msg.payload.decode()
-        if msg == 'throwcard':
-            while True:
-                inp = input('输入: ')
-                # 考虑玩家非法输入
-                try:
-                    inp = int(inp)
-                except:
-                    if inp == 'x':  # 打掉花牌
-                        break
-                    elif inp == 'v':    # 查看其他牌面信息
-                        print('\n牌堆剩余：' + str(self.tablecards_num))
-                        for id, pgcards in self.otherplayers_cards:
-                            print(str(id) + '号玩家：', pgcards)
-                        print('被打掉的牌：')
-                        self.print_leftcards(self.leftcards)
-                        print()
-                    elif inp in ('h','H','help','Help','HELP'):
-                        self.get_help()
-                    else:
-                        self.send_bark(inp)
+        while True:
+            inp = input('输入: ')
+            # 考虑玩家非法输入
+            try:
+                inp = int(inp)
+            except:
+                if inp == 'x':  # 打掉花牌
+                    break
+                elif inp == 'v':    # 查看其他牌面信息
+                    print('\n牌堆剩余：' + str(self.tablecards_num))
+                    for id, pgcards in self.otherplayers_cards:
+                        print(str(id) + '号玩家：', pgcards)
+                    print('被打掉的牌：')
+                    self.print_leftcards(self.leftcards)
+                    print()
+                elif inp in ('h','H','help','Help','HELP'):
+                    self.get_help()
                 else:
-                    l = self.get_handcards_num()
-                    if 0 < inp <= l:
-                        inp -= 1
-                        break
-                    elif -l <= inp < 0:
-                        break
-                    else:
-                        print('输入有误，请重新输入！')
-            self.send_throwcard(inp)
+                    self.send_bark(inp)
+            else:
+                l = self.get_handcards_num()
+                if 0 < inp <= l:
+                    inp -= 1
+                    break
+                elif -l <= inp < 0:
+                    break
+                else:
+                    print('输入有误，请重新输入！')
+        self.send_throwcard(inp)
 
 
     def throwcardinfo(self, msg):

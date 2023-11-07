@@ -7,14 +7,15 @@ from time import sleep
 
 
 class GameServer:
-    def __init__(self):
+    def __init__(self, server_id, players, uniqid_players_map, id_players_map):
+        self.server_id = server_id
         self.nats_addr = "nats://localhost:4222"
         self.connect()
         self.maj = Mahjong()
         self.table_cards = self.maj.shuffle_cards()  # 未被使用的牌堆
         # self.table_cards = ['6万']*50
         self.left_cards = []  # 被打掉的牌堆
-        self.players = []
+        self.players = players
         self.kind = 2  # 游戏类型（双人、三人、四人等）
         self.last_leftcard = None
         self.peng_type = None  # 碰的牌的类型
@@ -24,9 +25,10 @@ class GameServer:
         self.angang_card = None  # 暗杠摸到的那张牌
         self.angang_type = None
         self.curplayer_id = 1  # 当前轮到摸牌的玩家id
-        self.uniqid_players_map = {}  # uniq_id与玩家的映射
-        self.id_players_map = {}  # id与玩家的映射
-        self.reach_max_playersNum = False
+        self.uniqid_players_map = uniqid_players_map  # uniq_id与玩家的映射
+        self.id_players_map = id_players_map  # id与玩家的映射
+        for player in self.players:
+            print(player.id)
         self.subscribe()
 
 
@@ -91,20 +93,6 @@ class GameServer:
                 v.sort()
 
         return [player.hand_cards for player in self.players]
-
-
-    def send_isjoin(self, player, msg):
-        '''
-        给玩家发送加入请求的返回信息
-        '''
-        self.client.publish(player.uniq_id + '.isjoin', payload = msg.encode())
-
-
-    def send_startgame(self):
-        '''
-        向对局中的每个玩家发送游戏开始消息
-        '''
-        self.client.publish('startgame', payload = '游戏开始'.encode())
 
 
     def send_cardsinfo(self, player):
@@ -286,15 +274,15 @@ class GameServer:
         '''
         初始开始游戏
         '''
+        print('init_start')
         self.reset()
-        self.send_startgame()
         self.distribute_cards()  # 发牌
-        self.table_cards[:2]=['西风','西风']
-        p1,p2 = self.players
-        p1.hand_cards = {'筒子': [],
-                         '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
-                         '字牌': ['东风', '东风','东风', '红中', '红中', '红中'], '花牌': []}
-        p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
+        # self.table_cards[:3]=['东风','东风','西风']
+        # p1,p2 = self.players
+        # p1.hand_cards = {'筒子': [],
+        #                  '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
+        #                  '字牌': ['东风', '东风','东风', '红中', '红中', '红中'], '花牌': []}
+        # p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
 
         # p3.hand_cards = {'筒子': [],
         #           '条子': ['1条', '2条', '3条', '4条', '5条','6条', '7条', '9条'], '万字': [], '字牌': ['东风','东风', '北风', '北风', '北风'], '花牌': []}
@@ -303,6 +291,7 @@ class GameServer:
             self.send_showmycards(p)
 
         curplayer = self.id_players_map[self.curplayer_id]  # 轮到打牌的玩家
+        print('curplayer id:', curplayer.id)
         # 开局天胡/暗杠
         if curplayer.is_hu(curplayer.hand_cards):
             curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
@@ -320,6 +309,11 @@ class GameServer:
         self.send_throwcard(curplayer)
 
 
+    def handle_startserver(self, msg):
+        msg = msg.payload.decode()
+        self.init_start()
+
+
     def handle_bark(self, msg):
         '''
         处理玩家狗叫信息
@@ -333,29 +327,28 @@ class GameServer:
                 self.send_barkinfo(p, msg)
 
 
-    def handle_join(self, msg):
-        '''
-        处理玩家加入请求
-        '''
-        name, uniq_id, ip = msg.payload.decode().split(',')
-        player = Player(name, uniq_id)
-        print('target ip is: ', ip)
-
-        if len(self.players) < self.kind:
-            player.id = max([p.id for p in self.players]) + 1 if self.players else 1
-            self.players.append(player)
-            self.uniqid_players_map[uniq_id] = player
-            self.id_players_map[player.id] = player
-
-            print('第' + str(player.id) + '位玩家"' + player.name + '"加入对局！')
-            self.send_isjoin(player, '欢迎加入对局！')
-
-            if len(self.players) == self.kind:  # 玩家数量达到，开始游戏
-                self.init_start()
-        else:
-            print('已达最大玩家数量')
-            self.reach_max_playersNum = True
-            self.send_isjoin(player, '已达最大玩家数量！')
+    # def handle_join(self, msg):
+    #     '''
+    #     处理玩家加入请求
+    #     '''
+    #     name, uniq_id, ip = msg.payload.decode().split(',')
+    #     player = Player(name, uniq_id)
+    #     print('target ip is: ', ip)
+    #
+    #     if len(self.players) < self.kind:
+    #         player.id = max([p.id for p in self.players]) + 1 if self.players else 1
+    #         self.players.append(player)
+    #         self.uniqid_players_map[uniq_id] = player
+    #         self.id_players_map[player.id] = player
+    #
+    #         print('第' + str(player.id) + '位玩家"' + player.name + '"加入对局！')
+    #         self.send_isjoin(player, '欢迎加入对局！')
+    #
+    #         if len(self.players) == self.kind:  # 玩家数量达到，开始游戏
+    #             self.init_start()
+    #     else:
+    #         print('已达最大玩家数量')
+    #         self.send_isjoin(player, '已达最大玩家数量！')
 
 
     def handle_getcard(self, id):
@@ -367,7 +360,6 @@ class GameServer:
         print('curplayer_id:', self.curplayer_id)
         curplayer = self.id_players_map[self.curplayer_id]
 
-        # 先摸后打
         type, card = curplayer.get_card(self.table_cards)
         if type == 'empty':
             msg = '流局！一群草包。'
@@ -378,11 +370,9 @@ class GameServer:
         self.send_getcard(curplayer, card)
         self.send_cardsinfo(curplayer)  # 摸牌后给该玩家发送牌面信息
         self.send_showmycards(curplayer)
-        # 判断是否补杠
+
         bugang_return = curplayer.is_bugang(card)
-        # 判断是否暗杠
         angang_return = curplayer.is_angang()
-        # 判断是否自摸
         hu_return = False
         if not curplayer.hand_cards['花牌']:
             hu_return = curplayer.is_hu(curplayer.hand_cards)
@@ -441,7 +431,6 @@ class GameServer:
             for p in self.players:
                 tmp_list = [0, 0, 0]  # 分别代表点炮与否、吃杠与否、碰与否
                 if self.last_leftcard.player != p:
-                    # 点炮判断
                     lastcard = self.last_leftcard.card
                     if lastcard[1] in self.maj.abb_map:
                         card_type = self.maj.abb_map[lastcard[1]]
@@ -451,19 +440,17 @@ class GameServer:
                     tmp_handcards[card_type].append(lastcard)
                     tmp_handcards[card_type].sort()
                     print('carddddddd:',tmp_handcards, p.id)
-                    if not tmp_handcards['花牌']:
-                        if p.is_hu(tmp_handcards):
-                            p.hu_kind = p.kind_check(tmp_handcards, p.pg_cards, p.angang_num)
-                            print(p.hu_kind)
-                            if p.hu_kind != '鸡胡':
-                                tmp_list[0] = 1
 
-                    # 吃杠判断
+                    if not tmp_handcards['花牌'] and p.is_hu(tmp_handcards):
+                        p.hu_kind = p.kind_check(tmp_handcards, p.pg_cards, p.angang_num)
+                        print(p.hu_kind)
+                        if p.hu_kind != '鸡胡':
+                            tmp_list[0] = 1
+
                     cp_type = p.is_chigang(self.last_leftcard)
                     if cp_type:
                         tmp_list[1] = 1
 
-                    # 碰判断
                     cp_type = p.is_peng(self.last_leftcard)
                     if cp_type:
                         tmp_list[2] = 1
@@ -780,10 +767,10 @@ class GameServer:
 
     # 订阅消息
     def subscribe(self):
+        # 订阅服务启动消息
+        self.client.subscribe(str(self.server_id) + '.startserver', callback = self.handle_startserver)
         # 订阅狗叫消息
         self.client.subscribe("bark", callback = self.handle_bark)
-        # 订阅加入消息
-        self.client.subscribe("join", callback = self.handle_join)
         # 订阅摸牌消息
         self.client.subscribe("getcard", callback = self.handle_getcard)
         # 订阅打牌消息
