@@ -106,8 +106,8 @@ class Client:
         l1 = [num_map[i[0]] if i[0] in a else i[0] for i in l]
         l2 = [i[1] for i in l]
 
-        lp1 = [num_map[i[0]] if i[0] in a else i[0] for i in pgcards]
-        lp2 = [i[1] for i in pgcards]
+        lp1 = [num_map[i[0]] if i[0] in a else i[0] for i in pgcards['viewable'] + pgcards['unviewable']]
+        lp2 = [i[1] for i in pgcards['viewable'] + pgcards['unviewable']]
 
         for i in l1:
             print(i + ' ', end = '')
@@ -279,6 +279,8 @@ class Client:
         self.client.subscribe(self.uniq_id + '.dihu', callback = self.handle_dihu)
         # 订阅游戏结束消息
         self.client.subscribe(self.uniq_id + '.gameover', callback = self.handle_gameover)
+        # 订阅剩余筹码消息
+        self.client.subscribe(self.uniq_id + '.leftmoney', callback = self.handle_leftmoney)
         self.client.wait()
 
 
@@ -337,7 +339,8 @@ class Client:
                 elif inp == 'v':    # 查看其他牌面信息
                     print('\n牌堆剩余：' + str(self.tablecards_num))
                     for id, pgcards in self.otherplayers_cards:
-                        print(str(id) + '号玩家：', pgcards)
+                        print(str(id) + '号玩家：')
+                        print(pgcards['viewable'] + ['*' for i in range(len(pgcards['unviewable']))])
                     print('被打掉的牌：')
                     self.print_leftcards(self.leftcards)
                     print()
@@ -497,6 +500,11 @@ class Client:
     def handle_gameover(self, msg):
         msg = msg.payload.decode()
         print(msg)
+
+
+    def handle_leftmoney(self, msg):
+        leftmoney = msg.payload.decode()
+        print('剩余筹码：', str(leftmoney))
 
 
 def rejoin(curpath):

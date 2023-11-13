@@ -40,10 +40,11 @@ class Player:
         self.id = 0
         self.uniq_id = uniq_id
         self.hand_cards = {'筒子': [], '条子': [], '万字': [], '字牌': [], '花牌': []}
-        self.pg_cards = []  # 碰、杠后的手牌
+        self.pg_cards = {'viewable':[],'unviewable':[]}  # 碰、杠后的手牌
         self.pg_num = 0  # 碰、杠的次数
         self.angang_num = 0  # 暗杠的次数
-        self.money = 0  # 筹码
+        self.money = 10  # 筹码
+        self.money_gang = 0 # 杠得到的钱
         self.hu_kind = None  # 胡牌类型
         self.first_getcard = True
 
@@ -108,7 +109,7 @@ class Player:
         left_cards.remove(leftcard)
         self.hand_cards[type].remove(leftcard)
         self.hand_cards[type].remove(leftcard)
-        self.pg_cards.extend([leftcard] * 3)
+        self.pg_cards['viewable'].extend([leftcard] * 3)
         self.pg_num += 1
 
 
@@ -136,10 +137,10 @@ class Player:
         self.hand_cards[type].remove(leftcard)
         self.hand_cards[type].remove(leftcard)
         self.hand_cards[type].remove(leftcard)
-        self.pg_cards.extend([leftcard] * 4)
+        self.pg_cards['viewable'].extend([leftcard] * 4)
         self.pg_num += 1
-        self.money += 3
-        last_left_card.player.money -= 3
+        self.money_gang += 3
+        last_left_card.player.money_gang -= 3
 
 
     def is_bugang(self, card_got):
@@ -150,7 +151,7 @@ class Player:
             type = self.maj.abb_map[card_got[1]]
         else:
             type = '字牌'
-        if card_got in self.pg_cards and card_got[1] != '花':
+        if card_got in self.pg_cards['viewable'] and card_got[1] != '花':
             return type
         return False
 
@@ -160,12 +161,12 @@ class Player:
         补杠
         '''
         self.hand_cards[type].remove(card_got)
-        ind = self.pg_cards.index(card_got)
-        self.pg_cards.insert(ind, card_got)
-        self.money += (len(players) - 1)
+        ind = self.pg_cards['viewable'].index(card_got)
+        self.pg_cards['viewable'].insert(ind, card_got)
+        self.money_gang += (len(players) - 1)
         for player in players:
             if player != self:
-                player.money -= 1
+                player.money_gang -= 1
 
 
     def is_angang(self):
@@ -188,11 +189,11 @@ class Player:
         print(self.hand_cards)
         for i in range(4):
             self.hand_cards[type].remove(card_got)
-        self.pg_cards.extend([card_got] * 4)
-        self.money += (len(players) - 1) * 2
+        self.pg_cards['unviewable'].extend([card_got] * 4)
+        self.money_gang += (len(players) - 1) * 2
         for player in players:
             if player != self:
-                player.money -= 2
+                player.money_gang -= 2
 
 
     def is_hu(self, hand_cards):
@@ -285,6 +286,7 @@ class Player:
 
         numlist = handcards2numlist(handcards)
         pg = pgcards.copy()
+        pg = pg['viewable'] + pg['unviewable']
         for i in range(len(pgcards) - 1, -1, -1):
             if pg[i][1] == '花':
                 pg.remove(pg[i])

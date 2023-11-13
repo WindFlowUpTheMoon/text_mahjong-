@@ -1,17 +1,5 @@
-from threading import Thread
-from time import sleep
 
-
-def f1():
-    print('hello')
-    sleep(2)
-    print('world')
-
-
-def f2():
-    print('world')
-
-
-for i in range(3):
-    thread = Thread(target = f1)
-    thread.start()
+try:
+    print(3/0)
+except Exception as e:
+    print(type(e), str(e))

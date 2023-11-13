@@ -4,6 +4,7 @@ from app.utils import *
 import json
 from copy import deepcopy
 from time import sleep
+from app.config import KIND_VALUE_MAP
 
 
 class GameServer:
@@ -58,7 +59,7 @@ class GameServer:
 
         for p in self.players:
             p.hand_cards = {'筒子': [], '条子': [], '万字': [], '字牌': [], '花牌': []}
-            p.pg_cards = []  # 碰、杠后的手牌
+            p.pg_cards = {'viewable':[],'unviewable':[]}  # 碰、杠后的手牌
             p.pg_num = 0  # 碰、杠的次数
             p.angang_num = 0  # 暗杠的次数
             p.hu_kind = None  # 胡牌类型
@@ -274,6 +275,13 @@ class GameServer:
         self.client.publish(player.uniq_id + '.serverid', payload = msg.encode())
 
 
+    def send_leftmoney(self, player):
+        '''
+        结算剩余筹码
+        '''
+        self.client.publish(player.uniq_id + '.leftmoney', payload = str(player.money).encode())
+
+
     def init_start(self):
         '''
         初始开始游戏
@@ -287,7 +295,7 @@ class GameServer:
         # p1,p2 = self.players
         # p1.hand_cards = {'筒子': [],
         #                  '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
-        #                  '字牌': ['东风', '东风','东风', '红中', '红中', '红中'], '花牌': []}
+        #                  '字牌': ['东风', '东风','东风', '东风', '红中', '红中'], '花牌': []}
         # p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
 
         # p3.hand_cards = {'筒子': [],
@@ -306,10 +314,13 @@ class GameServer:
                     curplayer.hu_kind = hu_return
                 else:
                     curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
+                curplayer.money += 13*(len(self.players)-1)
                 for p in self.players:
+                    p.money -= 13
                     self.send_tianhu(p)
                     # self.send_cardsinfo(p)
                     self.send_showhucards(p, curplayer)
+                    self.send_leftmoney(p)
                 sleep(10)
                 self.init_start()
                 return
@@ -336,30 +347,6 @@ class GameServer:
         for p in self.players:
             if p != bark_player:
                 self.send_barkinfo(p, msg)
-
-
-    # def handle_join(self, msg):
-    #     '''
-    #     处理玩家加入请求
-    #     '''
-    #     name, uniq_id, ip = msg.payload.decode().split(',')
-    #     player = Player(name, uniq_id)
-    #     print('target ip is: ', ip)
-    #
-    #     if len(self.players) < self.kind:
-    #         player.id = max([p.id for p in self.players]) + 1 if self.players else 1
-    #         self.players.append(player)
-    #         self.uniqid_players_map[uniq_id] = player
-    #         self.id_players_map[player.id] = player
-    #
-    #         print('第' + str(player.id) + '位玩家"' + player.name + '"加入对局！')
-    #         self.send_isjoin(player, '欢迎加入对局！')
-    #
-    #         if len(self.players) == self.kind:  # 玩家数量达到，开始游戏
-    #             self.init_start()
-    #     else:
-    #         print('已达最大玩家数量')
-    #         self.send_isjoin(player, '已达最大玩家数量！')
 
 
     def handle_getcard(self, id):
@@ -393,9 +380,12 @@ class GameServer:
                 else:
                     curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
                 if curplayer.first_getcard:
+                    curplayer.money += 12*(len(self.players)-1)
                     for p in self.players:
+                        p.money -= 12
                         self.send_dihu(p)
                         self.send_showhucards(p, curplayer)
+                        self.send_leftmoney(p)
                     sleep(10)
                     self.init_start()
                 self.send_zimo(curplayer)
@@ -501,7 +491,7 @@ class GameServer:
                 print('222222222222', self.curplayer_id)
         # 花牌
         else:
-            player.pg_cards.extend(player.hand_cards['花牌'])
+            player.pg_cards['viewable'].extend(player.hand_cards['花牌'])
             hp_num = len(player.hand_cards['花牌'])
             player.hand_cards['花牌'] = []
             # 摸hp_num张牌
@@ -616,9 +606,14 @@ class GameServer:
         player = self.uniqid_players_map[uniq_id]
         print('zimooooooooooooooooooo',player.hand_cards)
         if ifzimo in ('y', 'Y'):
+            player.money += KIND_VALUE_MAP[player.hu_kind] * (len(self.players)-1)
             for p in self.players:
+                if p != player:
+                    p.money -= KIND_VALUE_MAP[player.hu_kind]
+                p.money += p.money_gang
                 self.send_cardsinfo(p)
                 self.send_showhucards(p, player)
+                self.send_leftmoney(p)
             sleep(10)
             self.init_start()
         elif ifzimo in ('n', 'N'):
@@ -633,9 +628,13 @@ class GameServer:
         uniq_id, ifdianpao = msg.payload.decode().split(',')
         player = self.uniqid_players_map[uniq_id]
         if ifdianpao in ('y', 'Y'):
+            player.money += KIND_VALUE_MAP[player.hu_kind]
+            self.last_leftcard.player.money -= KIND_VALUE_MAP[player.hu_kind]
             for p in self.players:
+                p.money += p.money_gang
                 self.send_cardsinfo(p)
                 self.send_showdianpaocards(p, player)
+                self.send_leftmoney(p)
             sleep(10)
             self.init_start()
         elif ifdianpao in ('n', 'N'):
@@ -688,9 +687,13 @@ class GameServer:
         player = self.uniqid_players_map[uniq_id]
 
         if flag == '1':  # 点炮
+            player.money += KIND_VALUE_MAP[player.hu_kind]
+            self.last_leftcard.player.money -= KIND_VALUE_MAP[player.hu_kind]
             for p in self.players:
+                p.money += p.money_gang
                 self.send_cardsinfo(p)
                 self.send_showdianpaocards(p, player)
+                self.send_leftmoney(p)
             sleep(10)
             self.init_start()
 
@@ -720,9 +723,13 @@ class GameServer:
         player = self.uniqid_players_map[uniq_id]
 
         if flag == '1':  # 点炮
+            player.money += KIND_VALUE_MAP[player.hu_kind]
+            self.last_leftcard.player.money -= KIND_VALUE_MAP[player.hu_kind]
             for p in self.players:
+                p.money += p.money_gang
                 self.send_cardsinfo(p)
                 self.send_showdianpaocards(p, player)
+                self.send_leftmoney(p)
             sleep(10)
             self.init_start()
 
@@ -751,9 +758,13 @@ class GameServer:
         player = self.uniqid_players_map[uniq_id]
 
         if flag == '1':  # 点炮
+            player.money += KIND_VALUE_MAP[player.hu_kind]
+            self.last_leftcard.player.money -= KIND_VALUE_MAP[player.hu_kind]
             for p in self.players:
+                p.money += p.money_gang
                 self.send_cardsinfo(p)
                 self.send_showdianpaocards(p, player)
+                self.send_leftmoney(p)
             sleep(10)
             self.init_start()
 
