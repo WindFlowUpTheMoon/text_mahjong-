@@ -199,6 +199,11 @@ class Client:
         self.client.publish(str(self.server_id) + '.zimo', payload = msg)
 
 
+    def send_haidilaoyue(self, ifhaidilaoyue):
+        msg = (self.uniq_id + ',' + ifhaidilaoyue).encode()
+        self.client.publish(str(self.server_id) + '.haidilaoyue', payload = msg)
+
+
     def send_dianpao(self, ifdianpao):
         msg = (self.uniq_id + ',' + ifdianpao).encode()
         self.client.publish(str(self.server_id) + '.dianpao', payload = msg)
@@ -259,6 +264,8 @@ class Client:
         self.client.subscribe(self.uniq_id + '.anganginfo', callback = self.handle_anganginfo)
         # 订阅自摸消息
         self.client.subscribe(self.uniq_id + '.zimo', callback = self.handle_zimo)
+        # 订阅海底捞月消息
+        self.client.subscribe(self.uniq_id + '.haidilaoyue', callback = self.handle_haidilaoyue)
         # 订阅胡牌牌面信息
         self.client.subscribe(self.uniq_id + '.showhucards', callback = self.handle_showhucards)
         # 订阅点炮消息
@@ -435,6 +442,15 @@ class Client:
             if ifzimo in ('y', 'n', 'Y', 'N'):
                 break
         self.send_zimo(ifzimo)
+
+
+    def handle_haidilaoyue(self, msg):
+        hu_kind = msg.payload.decode()
+        while True:
+            ifhaidilaoyue = input('海底捞月：'+hu_kind+'？(输入y/n) ')
+            if ifhaidilaoyue in ('y', 'n', 'Y', 'N'):
+                break
+        self.send_haidilaoyue(ifhaidilaoyue)
 
 
     def handle_showhucards(self, msg):

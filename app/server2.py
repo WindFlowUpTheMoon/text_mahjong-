@@ -4,7 +4,7 @@ from app.utils import *
 import json
 from copy import deepcopy
 from time import sleep
-from app.config import KIND_VALUE_MAP
+from app.config import KIND_VALUE_MAP, HAIDILAOYUE
 
 
 class GameServer:
@@ -201,6 +201,13 @@ class GameServer:
         self.client.publish(player.uniq_id + '.zimo', payload = player.hu_kind.encode())
 
 
+    def send_haidilaoyue(self, player):
+        '''
+        向玩家发送可以海底捞月的消息
+        '''
+        self.client.publish(player.uniq_id + '.haidilaoyue', payload = player.hu_kind.encode())
+
+
     def send_showhucards(self, p, player):
         id, handcards, pgcards, hu_kind = player.id, player.hand_cards, player.pg_cards, player.hu_kind
         msg = [str(id), handcards, pgcards, player.hu_kind]
@@ -291,12 +298,12 @@ class GameServer:
             self.send_serverid(player, str(self.server_id))
         self.reset()
         self.distribute_cards()  # 发牌
-        # self.table_cards[:3]=['东风','东风','西风']
-        # p1,p2 = self.players
-        # p1.hand_cards = {'筒子': [],
-        #                  '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
-        #                  '字牌': ['东风', '东风','东风', '东风', '红中', '红中'], '花牌': []}
-        # p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
+        self.table_cards=['西风']
+        p1,p2 = self.players
+        p1.hand_cards = {'筒子': [],
+                         '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
+                         '字牌': ['东风', '东风','北风', '北风', '红中', '红中'], '花牌': []}
+        p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
 
         # p3.hand_cards = {'筒子': [],
         #           '条子': ['1条', '2条', '3条', '4条', '5条','6条', '7条', '9条'], '万字': [], '字牌': ['东风','东风', '北风', '北风', '北风'], '花牌': []}
@@ -316,7 +323,8 @@ class GameServer:
                     curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
                 curplayer.money += 13*(len(self.players)-1)
                 for p in self.players:
-                    p.money -= 13
+                    if p != curplayer:
+                        p.money -= 13
                     self.send_tianhu(p)
                     # self.send_cardsinfo(p)
                     self.send_showhucards(p, curplayer)
@@ -379,16 +387,23 @@ class GameServer:
                     curplayer.hu_kind = hu_kind
                 else:
                     curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
+                # 地胡
                 if curplayer.first_getcard:
                     curplayer.money += 12*(len(self.players)-1)
                     for p in self.players:
-                        p.money -= 12
+                        if p != curplayer:
+                            p.money -= 12
                         self.send_dihu(p)
                         self.send_showhucards(p, curplayer)
                         self.send_leftmoney(p)
                     sleep(10)
                     self.init_start()
-                self.send_zimo(curplayer)
+                    return
+
+                if not self.table_cards:
+                    self.send_haidilaoyue(curplayer)
+                else:
+                    self.send_zimo(curplayer)
                 print('currrrrrrrrrr',curplayer.hand_cards)
                 return
         curplayer.first_getcard = False
@@ -616,7 +631,32 @@ class GameServer:
                 self.send_leftmoney(p)
             sleep(10)
             self.init_start()
+            return
         elif ifzimo in ('n', 'N'):
+            self.send_throwcard(player)
+
+
+    def handle_haidilaoyue(self, msg):
+        '''
+        处理玩家海底捞月请求
+        '''
+        print('get in handle_haidilaoyue')
+        uniq_id, ifhaidilaoyue = msg.payload.decode().split(',')
+        player = self.uniqid_players_map[uniq_id]
+        print('haidilaoyue',player.hand_cards)
+        if ifhaidilaoyue in ('y', 'Y'):
+            player.money += (KIND_VALUE_MAP[player.hu_kind] + HAIDILAOYUE) * (len(self.players)-1)    # 海底捞月加一番
+            for p in self.players:
+                if p != player:
+                    p.money -= (KIND_VALUE_MAP[player.hu_kind] + HAIDILAOYUE)
+                p.money += p.money_gang
+                self.send_cardsinfo(p)
+                self.send_showhucards(p, player)
+                self.send_leftmoney(p)
+            sleep(10)
+            self.init_start()
+            return
+        elif ifhaidilaoyue in ('n', 'N'):
             self.send_throwcard(player)
 
 
@@ -637,6 +677,7 @@ class GameServer:
                 self.send_leftmoney(p)
             sleep(10)
             self.init_start()
+            return
         elif ifdianpao in ('n', 'N'):
             tmp = (self.curplayer_id + 1) % self.kind
             id = tmp if tmp else self.kind
@@ -696,6 +737,7 @@ class GameServer:
                 self.send_leftmoney(p)
             sleep(10)
             self.init_start()
+            return
 
         elif flag == '2':  # 碰
             player.peng(self.last_leftcard, self.left_cards, cptype)
@@ -732,6 +774,7 @@ class GameServer:
                 self.send_leftmoney(p)
             sleep(10)
             self.init_start()
+            return
 
         elif flag == '2':  # 吃杠
             player.chigang(self.last_leftcard, self.left_cards, cptype)
@@ -767,6 +810,7 @@ class GameServer:
                 self.send_leftmoney(p)
             sleep(10)
             self.init_start()
+            return
 
         elif flag == '2':  # 吃杠
             player.chigang(self.last_leftcard, self.left_cards, cptype)
@@ -815,6 +859,8 @@ class GameServer:
         self.client.subscribe(str(self.server_id) + ".angang", callback = self.handle_angang)
         # 订阅自摸消息
         self.client.subscribe(str(self.server_id) + ".zimo", callback = self.handle_zimo)
+        # 订阅海底捞月消息
+        self.client.subscribe(str(self.server_id) + '.haidilaoyue', callback = self.handle_haidilaoyue)
         # 订阅点炮消息
         self.client.subscribe(str(self.server_id) + ".dianpao", callback = self.handle_dianpao)
         # 订阅吃杠/碰消息

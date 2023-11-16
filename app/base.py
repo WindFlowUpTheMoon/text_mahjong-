@@ -287,8 +287,9 @@ class Player:
         numlist = handcards2numlist(handcards)
         pg = pgcards.copy()
         pg = pg['viewable'] + pg['unviewable']
+        print('pggggggggggg:', pg)
         for i in range(len(pgcards) - 1, -1, -1):
-            if pg[i][1] == '花':
+            if pg and pg[i][1] == '花':
                 pg.remove(pg[i])
 
         # 九宝莲灯

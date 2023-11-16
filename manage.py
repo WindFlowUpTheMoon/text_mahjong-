@@ -4,15 +4,17 @@ from app.server2 import GameServer
 from time import sleep
 from pynats import NATSClient
 from app.base import Player
+import argparse
+from traceback import print_exc
 
 
 class Manager:
-    def __init__(self):
+    def __init__(self, game_type):
         self.nats_addr = "nats://localhost:4222"
         self.players = []
         self.players_num = 0
         self.server_id = 0
-        self.game_type = 2  # 游戏类型：双人、三人、四人等
+        self.game_type = game_type  # 游戏类型：双人、三人、四人等
         self.connect()
         self.subscribe()
 
@@ -54,10 +56,10 @@ class Manager:
             print('new server')
             # 新建一个子线程运行game_server
             ind = self.players_num // self.game_type
-            players = self.players[(ind-1)*self.game_type: ind*self.game_type]
+            players = self.players[(ind - 1) * self.game_type: ind * self.game_type]
             thread = threading.Thread(target = self.new_gameserver, args = (self.server_id, players,))
             thread.start()
-            sleep(1)    # 确保线程创建后再发送服务启动消息
+            sleep(1)  # 确保线程创建后再发送服务启动消息
             self.send_startserver(self.server_id)
             self.server_id += 1
 
@@ -69,14 +71,24 @@ def nats_server():
     os.system(natsserver_path)
 
 
-def server_manage():
+def server_manage(game_type):
+    try:
+        game_type = int(game_type)
+    except Exception as e:
+        print_exc()
+        return
     print('game manager start')
-    manager = Manager()
+    manager = Manager(game_type)
 
 
-thread1 = threading.Thread(target = nats_server)
-thread2 = threading.Thread(target = server_manage)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-game_type', default = 2, help = '选择游戏类型，双人、三人、四人或者更多')
+    args = parser.parse_args()
 
-thread1.start()
-sleep(1)
-thread2.start()
+    thread1 = threading.Thread(target = nats_server)
+    thread2 = threading.Thread(target = server_manage, args = (args.game_type,))
+
+    thread1.start()
+    sleep(1)
+    thread2.start()
