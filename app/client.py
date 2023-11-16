@@ -24,6 +24,8 @@ class Client:
         # print(self.uniq_id)
         self.hand_cards = {}
         self.pg_cards = []
+        self.money = 0
+        self.money_gang = 0
         self.otherplayers_cards = []
         self.tablecards_num = 0
         self.leftcards = []
@@ -321,7 +323,7 @@ class Client:
         msg = msg.payload.decode()
         msg = json.loads(msg)
         mycards, self.otherplayers_cards, self.tablecards_num, self.leftcards = msg
-        self.hand_cards, self.pg_cards = mycards
+        self.hand_cards, self.pg_cards, self.money, self.money_gang = mycards
         # print(type(msg),msg)
 
 
@@ -345,9 +347,11 @@ class Client:
                     break
                 elif inp == 'v':    # 查看其他牌面信息
                     print('\n牌堆剩余：' + str(self.tablecards_num))
-                    for id, pgcards in self.otherplayers_cards:
+                    print('我的筹码：' + str(self.money) + "+'" + str(self.money_gang) + "'")
+                    for id, pgcards, money, money_gang in self.otherplayers_cards:
                         print(str(id) + '号玩家：')
                         print(pgcards['viewable'] + ['*' for i in range(len(pgcards['unviewable']))])
+                        print('剩余筹码：' + str(money) + "+'" + str(money_gang) + "'")
                     print('被打掉的牌：')
                     self.print_leftcards(self.leftcards)
                     print()

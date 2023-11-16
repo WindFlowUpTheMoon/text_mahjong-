@@ -1,6 +1,7 @@
 from random import shuffle
 from app.utils import LastLeftCard, handcards2numlist
 from collections import Counter
+from app.config import MINGGANG, ANGANG, PLAYER_INIT_MONEY
 
 
 class Mahjong:
@@ -43,7 +44,7 @@ class Player:
         self.pg_cards = {'viewable':[],'unviewable':[]}  # 碰、杠后的手牌
         self.pg_num = 0  # 碰、杠的次数
         self.angang_num = 0  # 暗杠的次数
-        self.money = 10  # 筹码
+        self.money = PLAYER_INIT_MONEY  # 筹码
         self.money_gang = 0 # 杠得到的钱
         self.hu_kind = None  # 胡牌类型
         self.first_getcard = True
@@ -128,7 +129,7 @@ class Player:
         return False
 
 
-    def chigang(self, last_left_card: LastLeftCard, left_cards, type):
+    def chigang(self, last_left_card: LastLeftCard, left_cards, type, players):
         '''
         吃杠
         '''
@@ -139,8 +140,8 @@ class Player:
         self.hand_cards[type].remove(leftcard)
         self.pg_cards['viewable'].extend([leftcard] * 4)
         self.pg_num += 1
-        self.money_gang += 3
-        last_left_card.player.money_gang -= 3
+        self.money_gang += (len(players) - 1) * MINGGANG
+        last_left_card.player.money_gang -= (len(players) - 1) * MINGGANG
 
 
     def is_bugang(self, card_got):
@@ -163,10 +164,10 @@ class Player:
         self.hand_cards[type].remove(card_got)
         ind = self.pg_cards['viewable'].index(card_got)
         self.pg_cards['viewable'].insert(ind, card_got)
-        self.money_gang += (len(players) - 1)
+        self.money_gang += (len(players) - 1) * MINGGANG
         for player in players:
             if player != self:
-                player.money_gang -= 1
+                player.money_gang -= MINGGANG
 
 
     def is_angang(self):
@@ -190,10 +191,10 @@ class Player:
         for i in range(4):
             self.hand_cards[type].remove(card_got)
         self.pg_cards['unviewable'].extend([card_got] * 4)
-        self.money_gang += (len(players) - 1) * 2
+        self.money_gang += (len(players) - 1) * ANGANG
         for player in players:
             if player != self:
-                player.money_gang -= 2
+                player.money_gang -= ANGANG
 
 
     def is_hu(self, hand_cards):
