@@ -17,7 +17,7 @@ class GameServer:
         # self.table_cards = ['6万']*50
         self.left_cards = []  # 被打掉的牌堆
         self.players = players
-        self.kind = 2  # 游戏类型（双人、三人、四人等）
+        self.kind = len(players)  # 游戏类型（双人、三人、四人等）
         self.last_leftcard = None
         self.peng_type = None  # 碰的牌的类型
         self.chigang_type = None
@@ -26,10 +26,9 @@ class GameServer:
         self.angang_card = None  # 暗杠摸到的那张牌
         self.angang_type = None
         self.curplayer_id = 1  # 当前轮到摸牌的玩家id
+        self.hdly = '0'
         self.uniqid_players_map = uniqid_players_map  # uniq_id与玩家的映射
         self.id_players_map = id_players_map  # id与玩家的映射
-        for player in self.players:
-            print(player.id)
         self.subscribe()
 
 
@@ -47,7 +46,6 @@ class GameServer:
         self.table_cards = self.maj.shuffle_cards()  # 未被使用的牌堆
         # self.table_cards = ['6万']*50
         self.left_cards = []  # 被打掉的牌堆
-        self.kind = 2  # 游戏类型（双人、三人、四人等）
         self.last_leftcard = None
         self.peng_type = None  # 碰的牌的类型
         self.chigang_type = None
@@ -56,6 +54,7 @@ class GameServer:
         self.angang_card = None  # 暗杠摸到的那张牌
         self.angang_type = None
         self.curplayer_id = 1  # 当前轮到摸牌的玩家id
+        self.hdly = '0'
 
         for p in self.players:
             p.hand_cards = {'筒子': [], '条子': [], '万字': [], '字牌': [], '花牌': []}
@@ -65,10 +64,6 @@ class GameServer:
             p.hu_kind = None  # 胡牌类型
             p.first_getcard = True
             self.send_cardsinfo(p)
-
-
-    def set_kind(self, x):
-        self.kind = x
 
 
     def distribute_cards(self):
@@ -194,23 +189,17 @@ class GameServer:
         self.client.publish(player1.uniq_id + '.anganginfo', payload = msg.encode())
 
 
-    def send_zimo(self, player):
+    def send_zimo(self, player, hdly = '0'):
         '''
         向玩家发送可以自摸的消息
         '''
-        self.client.publish(player.uniq_id + '.zimo', payload = player.hu_kind.encode())
+        msg = player.hu_kind + ',' + hdly
+        self.client.publish(player.uniq_id + '.zimo', payload = msg.encode())
 
 
-    def send_haidilaoyue(self, player):
-        '''
-        向玩家发送可以海底捞月的消息
-        '''
-        self.client.publish(player.uniq_id + '.haidilaoyue', payload = player.hu_kind.encode())
-
-
-    def send_showhucards(self, p, player):
+    def send_showhucards(self, p, player, hdly = '0'):
         id, handcards, pgcards, hu_kind = player.id, player.hand_cards, player.pg_cards, player.hu_kind
-        msg = [str(id), handcards, pgcards, player.hu_kind]
+        msg = [str(id), handcards, pgcards, player.hu_kind, hdly]
         self.client.publish(p.uniq_id + '.showhucards', payload = json.dumps(msg).encode())
 
 
@@ -289,6 +278,18 @@ class GameServer:
         self.client.publish(player.uniq_id + '.leftmoney', payload = str(player.money).encode())
 
 
+    def tianhu_dihu(self, curplayer, kind, func):
+        curplayer.money += kind * (len(self.players) - 1)
+        for p in self.players:
+            if p != curplayer:
+                p.money -= kind
+            func(p)
+            self.send_showhucards(p, curplayer)
+            self.send_leftmoney(p)
+        sleep(10)
+        self.init_start()
+
+
     def init_start(self):
         '''
         初始开始游戏
@@ -298,12 +299,12 @@ class GameServer:
             self.send_serverid(player, str(self.server_id))
         self.reset()
         self.distribute_cards()  # 发牌
-        self.table_cards[:2]=['东风','西风']
-        p1,p2 = self.players
-        p1.hand_cards = {'筒子': [],
-                         '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
-                         '字牌': ['东风', '东风', '东风', '北风', '红中', '红中'], '花牌': []}
-        p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
+        # self.table_cards=['东风','西风']
+        # p1,p2 = self.players
+        # p1.hand_cards = {'筒子': [],
+        #                  '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
+        #                  '字牌': ['东风', '东风', '东风', '北风', '红中', '红中'], '花牌': []}
+        # p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
 
         # p3.hand_cards = {'筒子': [],
         #           '条子': ['1条', '2条', '3条', '4条', '5条','6条', '7条', '9条'], '万字': [], '字牌': ['东风','东风', '北风', '北风', '北风'], '花牌': []}
@@ -321,16 +322,7 @@ class GameServer:
                     curplayer.hu_kind = hu_return
                 else:
                     curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
-                curplayer.money += TIANHU*(len(self.players)-1)
-                for p in self.players:
-                    if p != curplayer:
-                        p.money -= TIANHU
-                    self.send_tianhu(p)
-                    # self.send_cardsinfo(p)
-                    self.send_showhucards(p, curplayer)
-                    self.send_leftmoney(p)
-                sleep(10)
-                self.init_start()
+                self.tianhu_dihu(curplayer, TIANHU, self.send_tianhu)
                 return
         if curplayer.is_angang():
             self.send_angang(curplayer)
@@ -389,26 +381,14 @@ class GameServer:
                     curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
                 # 地胡
                 if curplayer.first_getcard:
-                    curplayer.money += DIHU*(len(self.players)-1)
-                    for p in self.players:
-                        if p != curplayer:
-                            p.money -= DIHU
-                        self.send_dihu(p)
-                        self.send_showhucards(p, curplayer)
-                        self.send_leftmoney(p)
-                    sleep(10)
-                    self.init_start()
+                    self.tianhu_dihu(curplayer, DIHU, self.send_dihu)
                     return
 
                 if not self.table_cards:
-                    self.send_haidilaoyue(curplayer)
-                else:
-                    self.send_zimo(curplayer)
-                print('currrrrrrrrrr',curplayer.hand_cards)
+                    self.hdly = '1'
+                self.send_zimo(curplayer, self.hdly)
                 return
         curplayer.first_getcard = False
-
-        print(bugang_return, angang_return, hu_return)
 
         if bugang_return:
             self.bugang_card = card
@@ -421,7 +401,6 @@ class GameServer:
             return
 
         if not bugang_return and not angang_return and not hu_return:
-            print('????')
             self.send_throwcard(curplayer)
 
 
@@ -439,10 +418,8 @@ class GameServer:
             self.last_leftcard = LastLeftCard(player, leftcard)
 
             for p in self.players:
-                print('ppppppppp', p.id)
                 self.send_throwcardinfo(p, player, leftcard)
                 self.send_cardsinfo(p)  # 打牌后给每个玩家更新牌面信息
-                print('hhh',p.hand_cards)
                 if p == player:
                     self.send_showmycards(player)
 
@@ -518,6 +495,17 @@ class GameServer:
             self.send_throwcard(player)
 
 
+    def update_info(self, player, func, card = None):
+        for p in self.players:
+            if p.id != player.id:
+                if card:
+                    func(p, player, card)
+                else:
+                    func(p, player)
+            self.send_cardsinfo(p)
+        self.send_showmycards(player)
+
+
     def handle_peng(self, msg):
         '''
         处理玩家碰牌请求
@@ -529,11 +517,7 @@ class GameServer:
         if ifpeng in ('y', 'Y'):  # 碰了要打掉一张
             # 更新牌面信息
             player.peng(self.last_leftcard, self.left_cards, cptype)
-            for p in self.players:
-                if p.id != player.id:
-                    self.send_penginfo(p, player, self.last_leftcard.card)
-                self.send_cardsinfo(p)
-            self.send_showmycards(player)
+            self.update_info(player, self.send_penginfo, self.last_leftcard.card)
             self.curplayer_id = player.id
             # 给玩家发送打牌消息
             self.send_throwcard(player)
@@ -554,11 +538,7 @@ class GameServer:
         if ifchigang in ('y', 'Y'):  # 杠了要摸一张再打掉一张
             # 更新牌面信息
             player.chigang(self.last_leftcard, self.left_cards, cptype, self.players)
-            for p in self.players:
-                if p.id != player.id:
-                    self.send_chiganginfo(p, player, self.last_leftcard.card)
-                self.send_cardsinfo(p)
-            self.send_showmycards(player)
+            self.update_info(player, self.send_chiganginfo, self.last_leftcard.card)
             id = player.id
             self.handle_getcard(id)
             # self.curplayer_id = player.id
@@ -578,12 +558,7 @@ class GameServer:
         if ifbugang in ('y', 'Y'):  # 杠了要摸一张再打掉一张
             # 更新牌面信息
             player.bugang(self.bugang_card, self.bugang_type, self.players)
-            for p in self.players:
-                print(p.money)
-                if p.id != player.id:
-                    self.send_buganginfo(p, player, self.bugang_card)
-                self.send_cardsinfo(p)
-            self.send_showmycards(player)
+            self.update_info(player, self.send_buganginfo, self.bugang_card)
             # 摸一张
             self.handle_getcard(self.curplayer_id)
         elif ifbugang in ('n', 'N'):  # 不杠则打掉一张
@@ -600,12 +575,7 @@ class GameServer:
         if ifangang in ('y', 'Y'):
             # 更新牌面信息
             player.angang(self.angang_card, self.angang_type, self.players)
-            for p in self.players:
-                print(p.money)
-                if p.id != player.id:
-                    self.send_anganginfo(p, player)
-                self.send_cardsinfo(p)
-            self.send_showmycards(player)
+            self.update_info(player, self.send_anganginfo)
             # 摸一张
             self.handle_getcard(self.curplayer_id)
         elif ifangang in ('n', 'N'):  # 不杠则打掉一张
@@ -617,17 +587,17 @@ class GameServer:
         处理玩家自摸请求
         '''
         print('get in handle_zimo')
-        uniq_id, ifzimo = msg.payload.decode().split(',')
+        uniq_id, ifzimo, hdly = msg.payload.decode().split(',')
         player = self.uniqid_players_map[uniq_id]
         print('zimooooooooooooooooooo',player.hand_cards)
         if ifzimo in ('y', 'Y'):
-            player.money += KIND_VALUE_MAP[player.hu_kind] * (len(self.players)-1)
+            player.money += (KIND_VALUE_MAP[player.hu_kind] + HAIDILAOYUE[hdly]) * (len(self.players) - 1)
             for p in self.players:
                 if p != player:
-                    p.money -= KIND_VALUE_MAP[player.hu_kind]
+                    p.money -= (KIND_VALUE_MAP[player.hu_kind] + HAIDILAOYUE[hdly])
                 p.money += p.money_gang
                 self.send_cardsinfo(p)
-                self.send_showhucards(p, player)
+                self.send_showhucards(p, player, hdly)
                 self.send_leftmoney(p)
             sleep(10)
             self.init_start()
@@ -636,28 +606,16 @@ class GameServer:
             self.send_throwcard(player)
 
 
-    def handle_haidilaoyue(self, msg):
-        '''
-        处理玩家海底捞月请求
-        '''
-        print('get in handle_haidilaoyue')
-        uniq_id, ifhaidilaoyue = msg.payload.decode().split(',')
-        player = self.uniqid_players_map[uniq_id]
-        print('haidilaoyue',player.hand_cards)
-        if ifhaidilaoyue in ('y', 'Y'):
-            player.money += (KIND_VALUE_MAP[player.hu_kind] + HAIDILAOYUE) * (len(self.players)-1)    # 海底捞月加一番
-            for p in self.players:
-                if p != player:
-                    p.money -= (KIND_VALUE_MAP[player.hu_kind] + HAIDILAOYUE)
-                p.money += p.money_gang
-                self.send_cardsinfo(p)
-                self.send_showhucards(p, player)
-                self.send_leftmoney(p)
-            sleep(10)
-            self.init_start()
-            return
-        elif ifhaidilaoyue in ('n', 'N'):
-            self.send_throwcard(player)
+    def dianpao(self, player):
+        player.money += KIND_VALUE_MAP[player.hu_kind]
+        self.last_leftcard.player.money -= KIND_VALUE_MAP[player.hu_kind]
+        for p in self.players:
+            p.money += p.money_gang
+            self.send_cardsinfo(p)
+            self.send_showdianpaocards(p, player)
+            self.send_leftmoney(p)
+        sleep(10)
+        self.init_start()
 
 
     def handle_dianpao(self, msg):
@@ -668,15 +626,7 @@ class GameServer:
         uniq_id, ifdianpao = msg.payload.decode().split(',')
         player = self.uniqid_players_map[uniq_id]
         if ifdianpao in ('y', 'Y'):
-            player.money += KIND_VALUE_MAP[player.hu_kind]
-            self.last_leftcard.player.money -= KIND_VALUE_MAP[player.hu_kind]
-            for p in self.players:
-                p.money += p.money_gang
-                self.send_cardsinfo(p)
-                self.send_showdianpaocards(p, player)
-                self.send_leftmoney(p)
-            sleep(10)
-            self.init_start()
+            self.dianpao(player)
             return
         elif ifdianpao in ('n', 'N'):
             tmp = (self.curplayer_id + 1) % self.kind
@@ -694,25 +644,15 @@ class GameServer:
 
         if flag == '1':  # 吃杠
             player.chigang(self.last_leftcard, self.left_cards, cptype, self.players)
-            for p in self.players:
-                if p.id != player.id:
-                    self.send_chiganginfo(p, player, self.last_leftcard.card)
-                self.send_cardsinfo(p)
-            self.send_showmycards(player)
+            self.update_info(player, self.send_chiganginfo, self.last_leftcard.card)
             id = player.id
             self.handle_getcard(id)
-
         elif flag == '2':  # 碰
             player.peng(self.last_leftcard, self.left_cards, cptype)
-            for p in self.players:
-                if p.id != player.id:
-                    self.send_penginfo(p, player, self.last_leftcard.card)
-                self.send_cardsinfo(p)
-            self.send_showmycards(player)
+            self.update_info(player, self.send_penginfo, self.last_leftcard.card)
             self.curplayer_id = player.id
             # 给玩家发送打牌消息
             self.send_throwcard(player)
-
         elif flag in ('n', 'N'):
             tmp = (self.curplayer_id + 1) % self.kind
             id = tmp if tmp else self.kind
@@ -728,28 +668,14 @@ class GameServer:
         player = self.uniqid_players_map[uniq_id]
 
         if flag == '1':  # 点炮
-            player.money += KIND_VALUE_MAP[player.hu_kind]
-            self.last_leftcard.player.money -= KIND_VALUE_MAP[player.hu_kind]
-            for p in self.players:
-                p.money += p.money_gang
-                self.send_cardsinfo(p)
-                self.send_showdianpaocards(p, player)
-                self.send_leftmoney(p)
-            sleep(10)
-            self.init_start()
+            self.dianpao(player)
             return
-
         elif flag == '2':  # 碰
             player.peng(self.last_leftcard, self.left_cards, cptype)
-            for p in self.players:
-                if p.id != player.id:
-                    self.send_penginfo(p, player, self.last_leftcard.card)
-                self.send_cardsinfo(p)
-            self.send_showmycards(player)
+            self.update_info(player, self.send_penginfo, self.last_leftcard.card)
             self.curplayer_id = player.id
             # 给玩家发送打牌消息
             self.send_throwcard(player)
-
         elif flag in ('n', 'N'):
             tmp = (self.curplayer_id + 1) % self.kind
             id = tmp if tmp else self.kind
@@ -765,27 +691,13 @@ class GameServer:
         player = self.uniqid_players_map[uniq_id]
 
         if flag == '1':  # 点炮
-            player.money += KIND_VALUE_MAP[player.hu_kind]
-            self.last_leftcard.player.money -= KIND_VALUE_MAP[player.hu_kind]
-            for p in self.players:
-                p.money += p.money_gang
-                self.send_cardsinfo(p)
-                self.send_showdianpaocards(p, player)
-                self.send_leftmoney(p)
-            sleep(10)
-            self.init_start()
+            self.dianpao(player)
             return
-
         elif flag == '2':  # 吃杠
             player.chigang(self.last_leftcard, self.left_cards, cptype, self.players)
-            for p in self.players:
-                if p.id != player.id:
-                    self.send_chiganginfo(p, player, self.last_leftcard.card)
-                self.send_cardsinfo(p)
-            self.send_showmycards(player)
+            self.update_info(player, self.send_chiganginfo, self.last_leftcard.card)
             id = player.id
             self.handle_getcard(id)
-
         elif flag in ('n', 'N'):
             tmp = (self.curplayer_id + 1) % self.kind
             id = tmp if tmp else self.kind
@@ -801,38 +713,19 @@ class GameServer:
         player = self.uniqid_players_map[uniq_id]
 
         if flag == '1':  # 点炮
-            player.money += KIND_VALUE_MAP[player.hu_kind]
-            self.last_leftcard.player.money -= KIND_VALUE_MAP[player.hu_kind]
-            for p in self.players:
-                p.money += p.money_gang
-                self.send_cardsinfo(p)
-                self.send_showdianpaocards(p, player)
-                self.send_leftmoney(p)
-            sleep(10)
-            self.init_start()
+            self.dianpao(player)
             return
-
         elif flag == '2':  # 吃杠
             player.chigang(self.last_leftcard, self.left_cards, cptype, self.players)
-            for p in self.players:
-                if p.id != player.id:
-                    self.send_chiganginfo(p, player, self.last_leftcard.card)
-                self.send_cardsinfo(p)
-            self.send_showmycards(player)
+            self.update_info(player, self.send_chiganginfo, self.last_leftcard.card)
             id = player.id
             self.handle_getcard(id)
-
         elif flag == '3':  # 碰
             player.peng(self.last_leftcard, self.left_cards, cptype)
-            for p in self.players:
-                if p.id != player.id:
-                    self.send_penginfo(p, player, self.last_leftcard.card)
-                self.send_cardsinfo(p)
-            self.send_showmycards(player)
+            self.update_info(player, self.send_penginfo, self.last_leftcard.card)
             self.curplayer_id = player.id
             # 给玩家发送打牌消息
             self.send_throwcard(player)
-
         elif flag in ('n', 'N'):
             tmp = (self.curplayer_id + 1) % self.kind
             id = tmp if tmp else self.kind
@@ -859,8 +752,6 @@ class GameServer:
         self.client.subscribe(str(self.server_id) + ".angang", callback = self.handle_angang)
         # 订阅自摸消息
         self.client.subscribe(str(self.server_id) + ".zimo", callback = self.handle_zimo)
-        # 订阅海底捞月消息
-        self.client.subscribe(str(self.server_id) + '.haidilaoyue', callback = self.handle_haidilaoyue)
         # 订阅点炮消息
         self.client.subscribe(str(self.server_id) + ".dianpao", callback = self.handle_dianpao)
         # 订阅吃杠/碰消息
@@ -873,16 +764,3 @@ class GameServer:
         self.client.subscribe(str(self.server_id) + '.dianpao_chigang_peng', callback = self.handle_dianpao_chigang_peng)
         self.client.wait()
 
-
-if __name__ == '__main__':
-    # maj = Mahjong()
-    # print(maj.cards)
-    # print(maj.all_cards)
-    # print(maj.shuffle_cards())
-    # sup = Supervisor()
-    # sup.players = [Player(1), Player(2)]
-    # sup.add_player(Player(5))
-    # print(sup.distribute_cards())
-    # sup.start()
-    gs = GameServer()
-    gs.set_kind(2)

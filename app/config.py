@@ -10,7 +10,7 @@ KIND_VALUE_MAP = {  '九宝莲灯':13, '十三幺':13, '连七对':13, '大四�
 # 天胡/地胡赔付倍数
 TIANHU, DIHU = 13, 12
 # 海底捞月赔付倍数
-HAIDILAOYUE = 1
+HAIDILAOYUE = {'0': 0, '1': 1}
 # 明杠/暗杠赔付倍数
 MINGGANG, ANGANG = 1, 2
 

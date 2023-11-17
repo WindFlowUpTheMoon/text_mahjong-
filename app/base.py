@@ -41,11 +41,11 @@ class Player:
         self.id = 0
         self.uniq_id = uniq_id
         self.hand_cards = {'筒子': [], '条子': [], '万字': [], '字牌': [], '花牌': []}
-        self.pg_cards = {'viewable':[],'unviewable':[]}  # 碰、杠后的手牌
+        self.pg_cards = {'viewable': [], 'unviewable': []}  # 碰、杠后的手牌
         self.pg_num = 0  # 碰、杠的次数
         self.angang_num = 0  # 暗杠的次数
         self.money = PLAYER_INIT_MONEY  # 筹码
-        self.money_gang = 0 # 杠得到的钱
+        self.money_gang = 0  # 杠得到的钱
         self.hu_kind = None  # 胡牌类型
         self.first_getcard = True
 
@@ -289,9 +289,11 @@ class Player:
         pg = pgcards.copy()
         pg = pg['viewable'] + pg['unviewable']
         print('pggggggggggg:', pg)
-        for i in range(len(pgcards) - 1, -1, -1):
+        for i in range(len(pg) - 1, -1, -1):
             if pg and pg[i][1] == '花':
                 pg.remove(pg[i])
+
+        kinds = []
 
         # 九宝莲灯
         l1 = [str(i) for i in range(2, 9)]
@@ -309,41 +311,42 @@ class Player:
 
         # 大四喜
         target = {'东风', '南风', '西风', '北风'}
-        s = set(pgcards)
+        s = set(pg)
         target -= s
+        print('target:', target)
         c = Counter(handcards['字牌'])
         for i in target:
             if c[i] != 3:
                 break
         else:
-            return '大四喜'
+            kinds.append('大四喜')
 
         # 大三元
         target = {'红中', '发财', '白板'}
-        s = set(pgcards)
+        s = set(pg)
         target -= s
         c = Counter(handcards['字牌'])
         for i in target:
             if c[i] != 3:
                 break
         else:
-            return '大三元'
+            kinds.append('大三元')
 
         # 十八罗汉
-        c = Counter(pgcards)
+        c = Counter(pg)
         if sum([i == 4 for i in c.values()]) == 4:
-            return '十八罗汉'
+            kinds.append('十八罗汉')
 
         # 绿一色
         if not handcards['筒子'] and not handcards['万字'] and not any(i != '发财' for i in handcards['字牌']):
             if (handcards['字牌'] or '发财' in pg) and all(
                     i[0] in ('2', '3', '4', '6', '8', '发') for i in handcards['条子'] + pg):
-                return '绿一色'
+                kinds.append('绿一色')
 
         # 豪华七小对
         c = Counter(numlist)
         if len(numlist) == 14 and len(c) == 6 and all(i in (2, 4) for i in c.values()):
-            return '豪华七小对'
+            kinds.append('豪华七小对')
 
         # 清幺九
         # print(pg)
@@ -360,38 +363,38 @@ class Player:
                 if flag:
                     break
             else:
-                return '清幺九'
+                kinds.append('清幺九')
 
         # 四暗刻
         c = Counter(numlist)
         if sum(i == 3 for i in c.values()) == 4 and any(i == 2 for i in c.values()):
-            return '四暗刻'
+            kinds.append('四暗刻')
 
         # 小四喜
         target = {'东风', '南风', '西风', '北风'}
-        s = set(pgcards)
+        s = set(pg)
         target -= s
         c = Counter(handcards['字牌'])
         l = []
         for i in target:
             l.append(c[i])
         if sum(l) == (2 + (len(target) - 1) * 3):
-            return '小四喜'
+            kinds.append('小四喜')
 
         # 小三元
         target = {'红中', '发财', '白板'}
-        s = set(pgcards)
+        s = set(pg)
         target -= s
         c = Counter(handcards['字牌'])
         l = []
         for i in target:
             l.append(c[i])
         if sum(l) == (2 + (len(target) - 1) * 3):
-            return '小三元'
+            kinds.append('小三元')
 
         # 字一色
-        if all(i >= 31 for i in numlist) and all(i[1] in '花风中财板' for i in pgcards):
-            return '字一色'
+        if all(i >= 31 for i in numlist) and all(i[1] in '花风中财板' for i in pg):
+            kinds.append('字一色')
 
         # 一色双龙会
         if not handcards['字牌'] and sum([len(handcards[i]) > 0 for i in ('筒子', '条子', '万字')]) == 1:
@@ -414,12 +417,12 @@ class Player:
                 if flag:
                     break
             else:
-                return '混幺九'
+                kinds.append('混幺九')
 
         # 三杠
-        c = Counter(pgcards)
+        c = Counter(pg)
         if sum([i == 4 for i in c.values()]) == 3:
-            return '三杠'
+            kinds.append('三杠')
 
         # 清一色
         if sum(len(i) > 0 for i in handcards.values()) == 1:
@@ -430,12 +433,12 @@ class Player:
                 if i[1] != type[0]:
                     break
             else:
-                return '清一色'
+                kinds.append('清一色')
 
         # 七小对
         c = Counter(numlist)
         if len(numlist) == 14 and all(i == 2 for i in c.values()):
-            return '七小对'
+            kinds.append('七小对')
 
         # 全小/全中/全大/全双刻
         ln0 = []
@@ -444,15 +447,15 @@ class Player:
         ln = [i[0] for i in ln0]
         if not handcards['字牌'] and all(i[0] not in '东南西北红发白' for i in pg):
             if all(i in ('1', '2', '3') for i in ln + [j[0] for j in pg]):
-                return '全小'
+                kinds.append('全小')
             if all(i in ('4', '5', '6') for i in ln + [j[0] for j in pg]):
-                return '全中'
+                kinds.append('全中')
             if all(i in ('7', '8', '9') for i in ln + [j[0] for j in pg]):
-                return '全大'
+                kinds.append('全大')
             c1, c2 = Counter(ln0), Counter(pg)
             if all(k[0] in ('2', '4', '6', '8') and v in (2, 3) for k, v in c1.items()) and all(
                     k[0] in ('2', '4', '6', '8') and v in (3, 4) for k, v in c2.items()):
-                return '全双刻'
+                kinds.append('全双刻')
 
         # 清龙
         if len(numlist) >= 9:
@@ -463,27 +466,27 @@ class Player:
                         if i not in l:
                             break
                     else:
-                        return '清龙'
+                        kinds.append('清龙')
 
         # 三暗刻
         c = Counter(numlist)
         # 考虑手牌是111 222 45556和111 222 45556 777的情况
         if sum(i == 3 for i in c.values()) == 3 and any(i == 2 for i in c.values()) or \
                 sum(i == 3 for i in c.values()) == 4:
-            return '三暗刻'
+            kinds.append('三暗刻')
 
         # 三同刻
         c1, c2 = Counter(ln0), Counter(pg)
         l = [k for k, v in c1.items() if v == 3] + [k for k, v in c2.items() if v in (3, 4)]
         c = Counter([i[0] for i in l])
         if any(i == 3 for i in c.values()):
-            return '三同刻'
+            kinds.append('三同刻')
 
         # 三风刻
         c1, c2 = Counter(handcards['字牌']), Counter(pg)
         l = [k for k, v in c1.items() if v == 3] + [k for k, v in c2.items() if v in (3, 4)]
         if sum([i[0] in '东南西北' for i in l]) == 3:
-            return '三风刻'
+            kinds.append('三风刻')
 
         # 碰碰胡
         for type, cards in handcards.items():
@@ -491,7 +494,7 @@ class Player:
             if not all(i >= 2 for i in c.values()):
                 break
         else:
-            return '碰碰胡'
+            kinds.append('碰碰胡')
 
         # 混一色
         for type, cards in handcards.items():
@@ -504,11 +507,11 @@ class Player:
                     break
             else:
                 if all(i[1] == t[0] for i in pg if i[1] not in '风中财板'):
-                    return '混一色'
+                    kinds.append('混一色')
 
         # 双暗杠
         if self.angang_num == 2:
-            return '双暗杠'
+            kinds.append('双暗杠')
 
         # 双箭刻
         target = {'红中', '发财', '白板'}
@@ -519,26 +522,34 @@ class Player:
             if c1[i] == 3 or c2[i] == 3:
                 num += 1
         if num == 2:
-            return '双箭刻'
+            kinds.append('双箭刻')
 
         # 五门齐
-        for type, cards in handcards.items():
-            if not cards:
-                if type == '字牌':
-                    if not any(i[1] in '风中财板' for i in pg):
-                        break
-                else:
-                    if not any(i[1] == type[0] for i in pg):
-                        break
-        else:
-            return '五门齐'
+        hcl = []
+        for i in handcards.values():
+            hcl += i
+        all_cards_suffix = [i[1] for i in hcl + pg]
+        print(set(all_cards_suffix))
+        tmp_s = set(all_cards_suffix)
+        if all(i in tmp_s for i in '条筒万风') and any(i in tmp_s for i in '中财板'):
+            kinds.append('五门齐')
 
         # 推不倒
         l = (1, 2, 3, 4, 5, 8, 9, 12, 14, 15, 16, 18, 19, 43)
         if all(i in l for i in numlist) and all(i[0] in l for i in pg):
-            return '推不倒'
+            kinds.append('推不倒')
 
-        return '鸡胡'
+        if kinds:
+            absolute_relation = {'大四喜': ['混一色', '碰碰胡'], '小四喜': ['混一色', '三风刻'], '小三元': ['双箭刻'], '绿一色': ['混一色'], \
+                                 '豪华七小对': ['碰碰胡'], '四暗刻': ['三暗刻'], '混幺九': ['碰碰胡'], '七小对': ['碰碰胡'], '全双刻': ['碰碰胡']}
+            for i in kinds:
+                if i in absolute_relation:
+                    for j in absolute_relation[i]:
+                        if j in kinds:
+                            kinds.remove(j)
+            return ' '.join(kinds)
+        else:
+            return '鸡胡'
 
 
 if __name__ == '__main__':
@@ -561,9 +572,9 @@ if __name__ == '__main__':
     #               '条子': ['2条', '2条', '2条', '4条', '5条','6条'], '万字': [], '字牌': ['发财','发财']}
     # hand_cards = {'筒子': ['1筒', '2筒', '3筒'], '条子': [],
     #                             '万字': ['5万', '5万', '5万'], '字牌': ['发财', '发财']}
-    hand_cards = {'筒子': ['3筒', '3筒', '3筒'], '条子': ['2条', '2条', '2条'], '万字': ['5万', '6万', '6万', '6万', '7万'],
-                  '字牌': [], '花牌': []}
-    pgcards = ['3花', '3条', '3条', '3条']
+    hand_cards = {'筒子': [], '条子': ['2条', '2条'], '万字': [],
+                  '字牌': ['东风','东风','东风','南风','南风','南风',], '花牌': []}
+    pgcards = {'viewable': ['3花','西风','西风','西风','北风','北风','北风'], 'unviewable': []}
     player = Player('test', '1')
     player.hand_cards = hand_cards
     # print(player.is_hu(hand_cards))
