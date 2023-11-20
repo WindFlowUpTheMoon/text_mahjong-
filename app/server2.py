@@ -61,7 +61,7 @@ class GameServer:
             p.pg_cards = {'viewable':[],'unviewable':[]}  # 碰、杠后的手牌
             p.pg_num = 0  # 碰、杠的次数
             p.angang_num = 0  # 暗杠的次数
-            p.hu_kind = None  # 胡牌类型
+            p.hu_kinds = None  # 胡牌类型
             p.first_getcard = True
             self.send_cardsinfo(p)
 
@@ -193,13 +193,13 @@ class GameServer:
         '''
         向玩家发送可以自摸的消息
         '''
-        msg = player.hu_kind + ',' + hdly
+        msg = ','.join(player.hu_kinds) + ',' + hdly
         self.client.publish(player.uniq_id + '.zimo', payload = msg.encode())
 
 
     def send_showhucards(self, p, player, hdly = '0'):
-        id, handcards, pgcards, hu_kind = player.id, player.hand_cards, player.pg_cards, player.hu_kind
-        msg = [str(id), handcards, pgcards, player.hu_kind, hdly]
+        id, handcards, pgcards, hu_kinds = player.id, player.hand_cards, player.pg_cards, player.hu_kinds
+        msg = [str(id), handcards, pgcards, player.hu_kinds, hdly]
         self.client.publish(p.uniq_id + '.showhucards', payload = json.dumps(msg).encode())
 
 
@@ -207,12 +207,12 @@ class GameServer:
         '''
         向玩家发送可以点炮的消息
         '''
-        self.client.publish(player.uniq_id + '.dianpao', payload = player.hu_kind.encode())
+        self.client.publish(player.uniq_id + '.dianpao', payload = player.hu_kinds.encode())
 
 
     def send_showdianpaocards(self, p, player):
-        id, handcards, pgcards, hu_kind = player.id, player.hand_cards, player.pg_cards, player.hu_kind
-        msg = [str(id), handcards, pgcards, hu_kind]
+        id, handcards, pgcards, hu_kinds = player.id, player.hand_cards, player.pg_cards, player.hu_kinds
+        msg = [str(id), handcards, pgcards, hu_kinds]
         self.client.publish(p.uniq_id + '.showdianpaocards', payload = json.dumps(msg).encode())
 
 
@@ -300,11 +300,11 @@ class GameServer:
         self.reset()
         self.distribute_cards()  # 发牌
         # self.table_cards=['东风','西风']
-        # p1,p2 = self.players
-        # p1.hand_cards = {'筒子': [],
-        #                  '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
-        #                  '字牌': ['东风', '东风', '东风', '北风', '红中', '红中'], '花牌': []}
-        # p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '3条','4条'],'万字': ['5万','6万','7万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
+        p1,p2 = self.players
+        p1.hand_cards = {'筒子': [],
+                         '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
+                         '字牌': ['东风', '东风', '东风', '东风', '红中', '红中'], '花牌': []}
+        # p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '2条','2条'],'万字': ['5万','5万','5万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
 
         # p3.hand_cards = {'筒子': [],
         #           '条子': ['1条', '2条', '3条', '4条', '5条','6条', '7条', '9条'], '万字': [], '字牌': ['东风','东风', '北风', '北风', '北风'], '花牌': []}
@@ -319,12 +319,14 @@ class GameServer:
             hu_return = curplayer.is_hu(curplayer.hand_cards)
             if hu_return:
                 if hu_return != True:
-                    curplayer.hu_kind = hu_return
+                    curplayer.hu_kinds = hu_return
                 else:
-                    curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
+                    curplayer.hu_kinds = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
                 self.tianhu_dihu(curplayer, TIANHU, self.send_tianhu)
                 return
-        if curplayer.is_angang():
+        angang_return = curplayer.is_angang()
+        if angang_return:
+            self.angang_type, self.angang_card = angang_return
             self.send_angang(curplayer)
             return
 
@@ -376,9 +378,9 @@ class GameServer:
             hu_return = curplayer.is_hu(curplayer.hand_cards)
             if hu_return:
                 if hu_return != True:
-                    curplayer.hu_kind = hu_kind
+                    curplayer.hu_kinds = hu_kinds
                 else:
-                    curplayer.hu_kind = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
+                    curplayer.hu_kinds = curplayer.kind_check(curplayer.hand_cards, curplayer.pg_cards, curplayer.angang_num)
                 # 地胡
                 if curplayer.first_getcard:
                     self.tianhu_dihu(curplayer, DIHU, self.send_dihu)
@@ -441,11 +443,11 @@ class GameServer:
                         hu_return = p.is_hu(tmp_handcards)
                         if hu_return:
                             if hu_return != True:
-                                p.hu_kind = hu_return
+                                p.hu_kinds = hu_return
                             else:
-                                p.hu_kind = p.kind_check(tmp_handcards, p.pg_cards, p.angang_num)
-                            print(p.hu_kind)
-                            if p.hu_kind != '鸡胡':
+                                p.hu_kinds = p.kind_check(tmp_handcards, p.pg_cards, p.angang_num)
+                            print(p.hu_kinds)
+                            if p.hu_kinds != '鸡胡':
                                 tmp_list[0] = 1
 
                     cp_type = p.is_chigang(self.last_leftcard)
@@ -582,6 +584,13 @@ class GameServer:
             self.send_throwcard(player)
 
 
+    def count_hukinds_value(self, kinds):
+        money = 0
+        for kind in kinds:
+            money += KIND_VALUE_MAP[kind]
+        return money
+
+
     def handle_zimo(self, msg):
         '''
         处理玩家自摸请求
@@ -591,10 +600,10 @@ class GameServer:
         player = self.uniqid_players_map[uniq_id]
         print('zimooooooooooooooooooo',player.hand_cards)
         if ifzimo in ('y', 'Y'):
-            player.money += (KIND_VALUE_MAP[player.hu_kind] + HAIDILAOYUE[hdly]) * (len(self.players) - 1)
+            player.money += (self.count_hukinds_value(player.hu_kinds) + HAIDILAOYUE[hdly]) * (len(self.players) - 1)
             for p in self.players:
                 if p != player:
-                    p.money -= (KIND_VALUE_MAP[player.hu_kind] + HAIDILAOYUE[hdly])
+                    p.money -= (self.count_hukinds_value(player.hu_kinds) + HAIDILAOYUE[hdly])
                 p.money += p.money_gang
                 self.send_cardsinfo(p)
                 self.send_showhucards(p, player, hdly)
@@ -607,8 +616,8 @@ class GameServer:
 
 
     def dianpao(self, player):
-        player.money += KIND_VALUE_MAP[player.hu_kind]
-        self.last_leftcard.player.money -= KIND_VALUE_MAP[player.hu_kind]
+        player.money += self.count_hukinds_value(player.hu_kinds)
+        self.last_leftcard.player.money -= self.count_hukinds_value(player.hu_kinds)
         for p in self.players:
             p.money += p.money_gang
             self.send_cardsinfo(p)

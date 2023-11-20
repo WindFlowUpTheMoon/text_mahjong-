@@ -13,6 +13,27 @@ from collections import Counter
 from pprint import pprint
 
 
+class Mahjong:
+    def __init__(self):
+        self.types = ['筒子', '条子', '万字', '字牌', '花牌']
+        self.cards = {self.types[0]: list(range(1, 10)), self.types[1]: list(range(1, 10)),
+                      self.types[2]: list(range(1, 10)), \
+                      self.types[3]: ['东风', '南风', '西风', '北风', '红中', '发财', '白板'],
+                      self.types[4]: [1, 2, 3, 4]}
+        self.abb_map = {'筒': '筒子', '条': '条子', '万': '万字', '花': '花牌'}
+        self.all_cards = []
+        for k, v in self.cards.items():
+            if k in self.types[:3]:
+                for i in v:
+                    self.all_cards.extend([str(i) + k[0]] * 4)
+            elif k == self.types[3]:
+                for i in v:
+                    self.all_cards.extend([i] * 4)
+            else:
+                for i in v:
+                    self.all_cards.extend([str(i) + '花'] * 2)
+
+
 # 客户端类
 class Client:
     def __init__(self, name = '匿名'):
@@ -29,6 +50,11 @@ class Client:
         self.otherplayers_cards = []
         self.tablecards_num = 0
         self.leftcards = []
+        maj = Mahjong()
+        self.all_cards = maj.all_cards
+        self.CHECK_INFO = {'pdsysl': self.check_tablecards_num, 'bdddp': self.check_leftcards, \
+                           'mwjdp': self.check_player_cards, 'mzpdsysl': self.check_card_remainnum, \
+                           'wdcm': self.check_mymoney, 'mwjdcm': self.check_player_money}
 
 
     def set_natsaddr(self, ip):
@@ -48,7 +74,12 @@ class Client:
         msg = '''
             /****************************************************************************/
             输入 正整数n 代表要打掉的第n张手牌，输入 -n 代表要打掉的倒数第n张手牌，输入 x 打掉手里的花牌；
-            输入 v 可查看其他牌面信息，包括牌堆剩余数量、其他玩家碰/杠后放桌上的牌、被打掉的牌；
+            输入 pdsysl   可查看 牌堆剩余数量；
+            输入 bdddp    可查看 被打掉的牌；
+            输入 mwjdp    可查看 某玩家的牌；
+            输入 mzpdsysl 可查看 某张牌的剩余数量；
+            输入 wdcm     可查看 我的筹码；
+            输入 mwjdcm   可查看 某玩家的筹码；
             输入其他的信息将向其他玩家广播此信息；
             /****************************************************************************/
             '''
@@ -127,9 +158,6 @@ class Client:
 
 
     def print_leftcards(self, l):
-        '''
-        漂亮打印被打掉的牌面信息
-        '''
         l.sort()
         c = Counter(l)
         maj_map = {'筒子': [], '条子': [], '万字': [], '字牌': []}
@@ -142,7 +170,7 @@ class Client:
                 maj_map['万字'].append((k, v))
             else:
                 maj_map['字牌'].append((k, v))
-        pprint(maj_map)
+        print(maj_map)
 
 
     def get_handcards_num(self):
@@ -319,6 +347,7 @@ class Client:
         msg = msg.payload.decode()
         msg = json.loads(msg)
         mycards, self.otherplayers_cards, self.tablecards_num, self.leftcards = msg
+        self.leftcards2 = Counter(self.leftcards)
         self.hand_cards, self.pg_cards, self.money, self.money_gang = mycards
         # print(type(msg),msg)
 
@@ -331,6 +360,52 @@ class Client:
             self.print_playercards(self.pg_cards, self.hand_cards)
 
 
+    def check_tablecards_num(self):
+        # 查看剩余牌堆数量
+        print('牌堆剩余：' + str(self.tablecards_num))
+
+
+    def check_player_cards(self):
+        # 查看某玩家碰/杠的牌
+        player_id = input('输入玩家id：')
+        for id, pgcards, *_ in self.otherplayers_cards:
+            if str(id) == player_id:
+                print(pgcards['viewable'] + ['*' for i in range(len(pgcards['unviewable']))])
+                break
+        else:
+            print('输入有误！')
+
+
+    def check_leftcards(self):
+        # 查看被打掉的牌
+        self.print_leftcards(self.leftcards)
+
+
+    def check_card_remainnum(self):
+        # 查看某张牌的剩余数量
+        card = input('输入卡牌：')
+        if card not in self.all_cards:
+            print('输入有误！正确的输入格式形如：2筒、东风、1花')
+            return False
+        c = Counter(self.all_cards)
+        print(card + '剩余：' + str(c[card] - self.leftcards2[card]))
+
+
+    def check_mymoney(self):
+        # 查看我的剩余筹码
+        print('剩余筹码：' + str(self.money) + '+"' + str(self.money_gang) + '"')
+
+
+    def check_player_money(self):
+        # 查看某玩家的剩余筹码
+        player_id = input('输入玩家id：')
+        for id, _, money, money_gang in self.otherplayers_cards:
+            if player_id == str(id):
+                print(str(id) + '号玩家剩余筹码：' + str(money) + '+"' + str(money_gang + '"'))
+        else:
+            print('输入有误！')
+
+
     def handle_throwcard(self, msg):
         msg = msg.payload.decode()
         while True:
@@ -341,16 +416,8 @@ class Client:
             except:
                 if inp == 'x':  # 打掉花牌
                     break
-                elif inp == 'v':  # 查看其他牌面信息
-                    print('\n牌堆剩余：' + str(self.tablecards_num))
-                    print('我的筹码：' + str(self.money) + "+'" + str(self.money_gang) + "'")
-                    for id, pgcards, money, money_gang in self.otherplayers_cards:
-                        print(str(id) + '号玩家：')
-                        print(pgcards['viewable'] + ['*' for i in range(len(pgcards['unviewable']))])
-                        print('剩余筹码：' + str(money) + "+'" + str(money_gang) + "'")
-                    print('被打掉的牌：')
-                    self.print_leftcards(self.leftcards)
-                    print()
+                elif inp in self.CHECK_INFO:  # 查看其他牌面信息
+                    self.CHECK_INFO[inp]()
                 elif inp in ('h', 'H', 'help', 'Help', 'HELP'):
                     self.get_help()
                 else:
@@ -436,12 +503,12 @@ class Client:
 
 
     def handle_zimo(self, msg):
-        hu_kind, hdly = msg.payload.decode().split(',')
+        *hu_kind, hdly = msg.payload.decode().split(',')
         while True:
             if hdly == '0':
-                ifzimo = input('自摸' + hu_kind + '？(输入y/n) ')
+                ifzimo = input('自摸 ' + ','.join(hu_kind) + ' ？(输入y/n) ')
             elif hdly == '1':
-                ifzimo = input('海底捞月：' + hu_kind + '？(输入y/n) ')
+                ifzimo = input('海底捞月：' + ','.join(hu_kind) + ' ？(输入y/n) ')
             if ifzimo in ('y', 'n', 'Y', 'N'):
                 break
         self.send_zimo(ifzimo, hdly)
@@ -452,7 +519,7 @@ class Client:
         id, handcards, pgcards, hu_kind, hdly = json.loads(msg)
         if hdly == '1':
             print('海底捞月！')
-        print(hu_kind + '!\n' + id + '号自摸了！\n胡牌牌面信息：')
+        print(','.join(hu_kind) + '!\n' + id + '号自摸了！\n胡牌牌面信息：')
         self.print_playercards(pgcards, handcards)
 
 
@@ -468,7 +535,7 @@ class Client:
     def handle_showdianpaocards(self, msg):
         msg = msg.payload.decode()
         id, handcards, pgcards, hu_kind = json.loads(msg)
-        print(hu_kind + '!\n' + id + '号点炮了！\n胡牌牌面信息：')
+        print(','.join(hu_kind) + '!\n' + id + '号点炮了！\n胡牌牌面信息：')
         self.print_playercards(pgcards, handcards)
 
 

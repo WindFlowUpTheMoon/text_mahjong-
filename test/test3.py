@@ -1,11 +1,7 @@
 
-def f1(x):
-    print('hello',x)
-
-
-def f2(f):
-    f(3)
+for i in range(5):
+    if i==2:
+        print('hello')
+        break
+else:
     print('world')
-
-
-f2(f1)

@@ -46,7 +46,7 @@ class Player:
         self.angang_num = 0  # 暗杠的次数
         self.money = PLAYER_INIT_MONEY  # 筹码
         self.money_gang = 0  # 杠得到的钱
-        self.hu_kind = None  # 胡牌类型
+        self.hu_kinds = None  # 胡牌类型
         self.first_getcard = True
 
 
@@ -187,7 +187,7 @@ class Player:
         暗杠
         '''
         print(card_got, type)
-        print(self.hand_cards)
+        print(type, self.hand_cards)
         for i in range(4):
             self.hand_cards[type].remove(card_got)
         self.pg_cards['unviewable'].extend([card_got] * 4)
@@ -220,7 +220,7 @@ class Player:
                             or all(i[0] in ('3', '6', '9') for i in hand_cards[type])):
                         break
                 else:
-                    return '七星不靠'
+                    return ['七星不靠']
 
         # 是否有对子检查。
         double = []
@@ -248,7 +248,7 @@ class Player:
                 else:
                     break
             else:
-                return '十三幺'
+                return ['十三幺']
 
         # 常规和牌检测。
         a1 = a.copy()
@@ -301,13 +301,13 @@ class Player:
             if len(cards) == 14 and all(i[0] == '1' for i in cards[:3]) and all(i[0] == '9' for i in cards[-3:]):
                 c = [i[0] for i in cards]
                 if all(i in c for i in l1):
-                    return '九宝莲灯'
+                    return ['九宝莲灯']
 
         # 连七对
         for type, cards in handcards.items():
             c = Counter(cards)
             if len(cards) == 14 and all(v == 2 for k, v in c.items()) and int(cards[-1][0]) - int(cards[0][0]) == 6:
-                return '连七对'
+                return ['连七对']
 
         # 大四喜
         target = {'东风', '南风', '西风', '北风'}
@@ -547,7 +547,7 @@ class Player:
                     for j in absolute_relation[i]:
                         if j in kinds:
                             kinds.remove(j)
-            return ' '.join(kinds)
+            return kinds
         else:
             return '鸡胡'
 

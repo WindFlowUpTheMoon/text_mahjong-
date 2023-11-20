@@ -90,5 +90,5 @@ if __name__ == '__main__':
     thread2 = threading.Thread(target = server_manage, args = (args.game_type,))
 
     thread1.start()
-    sleep(1)
+    sleep(3)
     thread2.start()
