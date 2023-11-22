@@ -11,6 +11,7 @@ from os import path
 from traceback import print_exc
 from collections import Counter
 from pprint import pprint
+from copy import copy
 
 
 class Mahjong:
@@ -50,11 +51,14 @@ class Client:
         self.otherplayers_cards = []
         self.tablecards_num = 0
         self.leftcards = []
-        maj = Mahjong()
-        self.all_cards = maj.all_cards
-        self.CHECK_INFO = {'pdsysl': self.check_tablecards_num, 'bdddp': self.check_leftcards, \
-                           'mwjdp': self.check_player_cards, 'mzpdsysl': self.check_card_remainnum, \
-                           'wdcm': self.check_mymoney, 'mwjdcm': self.check_player_money}
+        self.maj = Mahjong()
+        self.all_cards = self.maj.all_cards
+        self.set_all_cards = copy(self.maj.all_cards)
+        set(self.set_all_cards)
+        self.CHECK_INFO = {'cardsnum': self.check_tablecards_num, 'leftcards': self.check_leftcards, \
+                           'cards': self.check_player_cards, 'card_num': self.check_card_remainnum, \
+                           'mymoney': self.check_mymoney, 'money': self.check_player_money,\
+                           'mycards': self.check_mycards}
 
 
     def set_natsaddr(self, ip):
@@ -74,12 +78,13 @@ class Client:
         msg = '''
             /****************************************************************************/
             输入 正整数n 代表要打掉的第n张手牌，输入 -n 代表要打掉的倒数第n张手牌，输入 x 打掉手里的花牌；
-            输入 pdsysl   可查看 牌堆剩余数量；
-            输入 bdddp    可查看 被打掉的牌；
-            输入 mwjdp    可查看 某玩家的牌；
-            输入 mzpdsysl 可查看 某张牌的剩余数量；
-            输入 wdcm     可查看 我的筹码；
-            输入 mwjdcm   可查看 某玩家的筹码；
+            输入 cardsnum 可查看 牌堆剩余数量；
+            输入 leftcards 可查看 被打掉的牌；
+            输入 mycards 可查看 我的牌面；
+            输入 id+cards 可查看 某玩家的pg牌，如 3cards；
+            输入 某张牌的名称 可查看 某张牌的剩余数量，如 8万、发财、2花；
+            输入 mymoney 可查看 我的筹码；
+            输入 id+money 可查看 某玩家的筹码，如 2money；
             输入其他的信息将向其他玩家广播此信息；
             /****************************************************************************/
             '''
@@ -365,9 +370,8 @@ class Client:
         print('牌堆剩余：' + str(self.tablecards_num))
 
 
-    def check_player_cards(self):
+    def check_player_cards(self, player_id):
         # 查看某玩家碰/杠的牌
-        player_id = input('输入玩家id：')
         for id, pgcards, *_ in self.otherplayers_cards:
             if str(id) == player_id:
                 print(pgcards['viewable'] + ['*' for i in range(len(pgcards['unviewable']))])
@@ -381,14 +385,18 @@ class Client:
         self.print_leftcards(self.leftcards)
 
 
-    def check_card_remainnum(self):
-        # 查看某张牌的剩余数量
-        card = input('输入卡牌：')
-        if card not in self.all_cards:
-            print('输入有误！正确的输入格式形如：2筒、东风、1花')
-            return False
+    def check_card_remainnum(self, card):
+        # 查看某张牌的剩余数量（玩家自己手牌与所有碰杠牌、其他玩家的viewable碰杠牌、被打掉的牌为已知）
         c = Counter(self.all_cards)
-        print(card + '剩余：' + str(c[card] - self.leftcards2[card]))
+        num = Counter(self.pg_cards['viewable'] + self.pg_cards['unviewable'])[card]
+        if card[1] in self.maj.abb_map:
+            type = self.maj.abb_map[card[1]]
+            num += Counter(self.hand_cards[type])[card]
+        else:
+            num += Counter(self.hand_cards['字牌'])[card]
+        for id, pgcards, *_ in self.otherplayers_cards:
+            num += Counter(pgcards['viewable'])[card]
+        print(card + '剩余：' + str(c[card] - self.leftcards2[card] - num))
 
 
     def check_mymoney(self):
@@ -396,14 +404,19 @@ class Client:
         print('剩余筹码：' + str(self.money) + '+"' + str(self.money_gang) + '"')
 
 
-    def check_player_money(self):
+    def check_player_money(self, player_id):
         # 查看某玩家的剩余筹码
-        player_id = input('输入玩家id：')
         for id, _, money, money_gang in self.otherplayers_cards:
             if player_id == str(id):
-                print(str(id) + '号玩家剩余筹码：' + str(money) + '+"' + str(money_gang + '"'))
+                print(str(id) + '号玩家剩余筹码：' + str(money) + '+"' + str(money_gang) + '"')
+                break
         else:
             print('输入有误！')
+
+
+    def check_mycards(self):
+        # 查看我的牌面
+        self.print_playercards(self.pg_cards, self.hand_cards)
 
 
     def handle_throwcard(self, msg):
@@ -416,8 +429,12 @@ class Client:
             except:
                 if inp == 'x':  # 打掉花牌
                     break
-                elif inp in self.CHECK_INFO:  # 查看其他牌面信息
+                elif inp in self.CHECK_INFO:
                     self.CHECK_INFO[inp]()
+                elif inp[-5:] in self.CHECK_INFO:
+                    self.CHECK_INFO[inp[-5:]](inp[:-5])
+                elif inp in self.set_all_cards:
+                    self.CHECK_INFO['card_num'](inp)
                 elif inp in ('h', 'H', 'help', 'Help', 'HELP'):
                     self.get_help()
                 else:

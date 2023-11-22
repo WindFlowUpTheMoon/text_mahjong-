@@ -278,7 +278,7 @@ class Player:
             return False
 
 
-    def kind_check(self, hand_cards, pgcards, angang_num):
+    def kind_check(self, hand_cards, pgcards, angang_num, lastcard=None):
         '''
         番型检测
         '''
@@ -365,9 +365,22 @@ class Player:
             else:
                 kinds.append('清幺九')
 
+        tong_map = {str(i) + '筒': i for i in range(1, 10)}
+        tiao_map = {str(i - 10) + '条': i for i in range(11, 20)}
+        wan_map = {str(i - 20) + '万': i for i in range(21, 30)}
+        s = '东风 南风 西风 北风 红中 白板 发财'
+        inl = [31, 33, 35, 37, 41, 43, 45]
+        zi_map = dict(zip(s.split(' '), inl))
+        mmap = dict(**tong_map, **tiao_map, **wan_map, **zi_map)
+        lastcard_num = mmap.get(lastcard, -1)
+        print('lastcard_num:', lastcard_num)
         # 四暗刻
         c = Counter(numlist)
-        if sum(i == 3 for i in c.values()) == 4 and any(i == 2 for i in c.values()):
+        kezi_num = 0
+        for k, v in c.items():
+            if v == 3 and lastcard_num != k:
+                kezi_num += 1
+        if kezi_num == 4 and any(i == 2 for i in c.values()):
             kinds.append('四暗刻')
 
         # 小四喜
@@ -471,7 +484,11 @@ class Player:
         # 三暗刻
         c = Counter(numlist)
         # 考虑手牌是111 222 45556和111 222 45556 777的情况
-        if sum(i == 3 for i in c.values()) == 3 and any(i == 2 for i in c.values()) or \
+        kezi_num = 0
+        for k, v in c.items():
+            if v == 3 and lastcard_num != k:
+                kezi_num += 1
+        if kezi_num == 3 and any(i == 2 for i in c.values()) or \
                 sum(i == 3 for i in c.values()) == 4:
             kinds.append('三暗刻')
 
@@ -540,8 +557,9 @@ class Player:
             kinds.append('推不倒')
 
         if kinds:
-            absolute_relation = {'大四喜': ['混一色', '碰碰胡'], '小四喜': ['混一色', '三风刻'], '小三元': ['双箭刻'], '绿一色': ['混一色'], \
-                                 '豪华七小对': ['碰碰胡'], '四暗刻': ['三暗刻'], '混幺九': ['碰碰胡'], '七小对': ['碰碰胡'], '全双刻': ['碰碰胡']}
+            absolute_relation = {'大四喜': ['混一色', '碰碰胡'], '小四喜': ['混一色', '三风刻'], '小三元': ['双箭刻'], '绿一色': ['混一色'],
+                                 '豪华七小对': ['碰碰胡'], '四暗刻': ['三暗刻'], '混幺九': ['碰碰胡'], '七小对': ['碰碰胡'],
+                                 '全双刻': ['碰碰胡'], '清一色': ['混一色']}
             for i in kinds:
                 if i in absolute_relation:
                     for j in absolute_relation[i]:
@@ -572,9 +590,9 @@ if __name__ == '__main__':
     #               '条子': ['2条', '2条', '2条', '4条', '5条','6条'], '万字': [], '字牌': ['发财','发财']}
     # hand_cards = {'筒子': ['1筒', '2筒', '3筒'], '条子': [],
     #                             '万字': ['5万', '5万', '5万'], '字牌': ['发财', '发财']}
-    hand_cards = {'筒子': [], '条子': ['2条', '2条'], '万字': [],
-                  '字牌': ['东风','东风','东风','南风','南风','南风',], '花牌': []}
-    pgcards = {'viewable': ['3花','西风','西风','西风','北风','北风','北风'], 'unviewable': []}
+    hand_cards = {'筒子': [], '条子': ['3条', '3条', '4条', '4条', '4条', '5条', '5条', '5条', '7条', '7条', '7条'], '万字': [],
+                  '字牌': [], '花牌': []}
+    pgcards = {'viewable': ['3花','2条', '2条', '2条'], 'unviewable': []}
     player = Player('test', '1')
     player.hand_cards = hand_cards
     # print(player.is_hu(hand_cards))
@@ -587,5 +605,5 @@ if __name__ == '__main__':
     # print(c)
     # print(all(v==2 for k,v in c.items()))
     print(player.is_hu(hand_cards))
-    kind = player.kind_check(hand_cards, pgcards, 1)
+    kind = player.kind_check(hand_cards, pgcards, 0, '7条')
     print(kind)

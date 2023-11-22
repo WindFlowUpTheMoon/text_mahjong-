@@ -207,7 +207,7 @@ class GameServer:
         '''
         向玩家发送可以点炮的消息
         '''
-        self.client.publish(player.uniq_id + '.dianpao', payload = player.hu_kinds.encode())
+        self.client.publish(player.uniq_id + '.dianpao', payload = ','.join(player.hu_kinds).encode())
 
 
     def send_showdianpaocards(self, p, player):
@@ -299,12 +299,12 @@ class GameServer:
             self.send_serverid(player, str(self.server_id))
         self.reset()
         self.distribute_cards()  # 发牌
-        # self.table_cards=['东风','西风']
+        self.table_cards=['东风','西风']
         p1,p2 = self.players
         p1.hand_cards = {'筒子': [],
                          '条子': ['1条', '2条', '3条', '4条', '5条', '8条', '8条', '8条'], '万字': [],
-                         '字牌': ['东风', '东风', '东风', '东风', '红中', '红中'], '花牌': []}
-        # p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '2条','2条'],'万字': ['5万','5万','5万'], '字牌': ['发财','发财','发财','西风'], '花牌': []}
+                         '字牌': ['东风', '东风', '东风', '西风', '红中', '红中'], '花牌': []}
+        p2.hand_cards = {'筒子': ['3筒','3筒', '3筒'], '条子': ['2条', '2条','2条'],'万字': ['5万','5万','5万'], '字牌': ['发财','发财','西风','西风'], '花牌': []}
 
         # p3.hand_cards = {'筒子': [],
         #           '条子': ['1条', '2条', '3条', '4条', '5条','6条', '7条', '9条'], '万字': [], '字牌': ['东风','东风', '北风', '北风', '北风'], '花牌': []}
@@ -445,7 +445,7 @@ class GameServer:
                             if hu_return != True:
                                 p.hu_kinds = hu_return
                             else:
-                                p.hu_kinds = p.kind_check(tmp_handcards, p.pg_cards, p.angang_num)
+                                p.hu_kinds = p.kind_check(tmp_handcards, p.pg_cards, p.angang_num, lastcard)
                             print(p.hu_kinds)
                             if p.hu_kinds != '鸡胡':
                                 tmp_list[0] = 1
