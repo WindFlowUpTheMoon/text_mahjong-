@@ -1,7 +1,8 @@
+from time import sleep
+from sys import stdin
 
-for i in range(5):
-    if i==2:
-        print('hello')
-        break
-else:
-    print('world')
+
+print('start')
+sleep(5)
+x = input('输入：')
+print(x)
