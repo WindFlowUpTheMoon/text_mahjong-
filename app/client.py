@@ -13,6 +13,7 @@ from collections import Counter
 from pprint import pprint
 from copy import copy
 import threading
+import msvcrt
 
 
 class Mahjong:
@@ -79,6 +80,12 @@ class Client:
 
     def disconnect(self):
         self.client.close()
+
+
+    # 清空输入缓冲区
+    def clear_buffer(self):
+        while msvcrt.kbhit():
+            msvcrt.getch()
 
 
     def get_help(self):
@@ -433,6 +440,7 @@ class Client:
     def handle_throwcard(self, msg):
         msg = msg.payload.decode()
         while True:
+            self.clear_buffer()
             inp = input('输入：')
             # 考虑玩家非法输入
             try:
@@ -478,6 +486,7 @@ class Client:
     def handle_peng(self, msg):
         cptype = msg.payload.decode()
         while True:
+            self.clear_buffer()
             ifpeng = input('碰？(输入y/n) ')
             if ifpeng in ('y', 'n', 'Y', 'N'):
                 break
@@ -492,6 +501,7 @@ class Client:
     def handle_chigang(self, msg):
         cptype = msg.payload.decode()
         while True:
+            self.clear_buffer()
             ifchigang = input('杠？(输入y/n) ')
             if ifchigang in ('y', 'n', 'Y', 'N'):
                 break
@@ -507,6 +517,7 @@ class Client:
         msg = msg.payload.decode()
         if msg == '可补杠':
             while True:
+                self.clear_buffer()
                 ifbugang = input('补杠？(输入y/n) ')
                 if ifbugang in ('y', 'n', 'Y', 'N'):
                     break
@@ -522,6 +533,7 @@ class Client:
         msg = msg.payload.decode()
         if msg == '可暗杠':
             while True:
+                self.clear_buffer()
                 ifangang = input('暗杠？(输入y/n) ')
                 if ifangang in ('y', 'n', 'Y', 'N'):
                     break
@@ -537,8 +549,10 @@ class Client:
         *hu_kind, hdly = msg.payload.decode().split(',')
         while True:
             if hdly == '0':
+                self.clear_buffer()
                 ifzimo = input('自摸 ' + ','.join(hu_kind) + ' ？(输入y/n) ')
             elif hdly == '1':
+                self.clear_buffer()
                 ifzimo = input('海底捞月：' + ','.join(hu_kind) + ' ？(输入y/n) ')
             if ifzimo in ('y', 'n', 'Y', 'N'):
                 break
@@ -557,6 +571,7 @@ class Client:
     def handle_dianpao(self, msg):
         hu_kind = msg.payload.decode()
         while True:
+            self.clear_buffer()
             ifdianpao = input('点炮' + hu_kind + '？(输入y/n) ')
             if ifdianpao in ('y', 'n', 'Y', 'N'):
                 break
@@ -574,6 +589,7 @@ class Client:
         print('receive chigang_peng')
         cptype = msg.payload.decode()
         while True:
+            self.clear_buffer()
             flag = input('杠/碰/no？(输入1/2/n) ')
             if flag in ('1', '2', 'n', 'N'):
                 break
@@ -583,6 +599,7 @@ class Client:
     def handle_dianpao_peng(self, msg):
         cptype = msg.payload.decode()
         while True:
+            self.clear_buffer()
             flag = input('点炮/碰/no？(输入1/2/n) ')
             if flag in ('1', '2', 'n', 'N'):
                 break
@@ -592,6 +609,7 @@ class Client:
     def handle_dianpao_chigang(self, msg):
         cptype = msg.payload.decode()
         while True:
+            self.clear_buffer()
             flag = input('点炮/杠/no？(输入1/2/n) ')
             if flag in ('1', '2', 'n', 'N'):
                 break
@@ -601,6 +619,7 @@ class Client:
     def handle_dianpao_chigang_peng(self, msg):
         cptype = msg.payload.decode()
         while True:
+            self.clear_buffer()
             flag = input('点炮/杠/碰/no？(输入1/2/3/n) ')
             if flag in ('1', '2', '3', 'n', 'N'):
                 break
