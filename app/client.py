@@ -470,9 +470,6 @@ class Client:
         self.send_throwcard(inp)
 
 
-
-
-
     def throwcardinfo(self, msg):
         msg = msg.payload.decode()
         print(msg)

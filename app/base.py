@@ -192,6 +192,7 @@ class Player:
             self.hand_cards[type].remove(card_got)
         self.pg_cards['unviewable'].extend([card_got] * 4)
         self.money_gang += (len(players) - 1) * ANGANG
+        self.angang_num += 1
         for player in players:
             if player != self:
                 player.money_gang -= ANGANG
@@ -282,6 +283,7 @@ class Player:
         '''
         番型检测
         '''
+        print('angang_num:', angang_num)
         handcards = hand_cards.copy()
         handcards.pop('花牌')
 
@@ -376,7 +378,7 @@ class Player:
         print('lastcard_num:', lastcard_num)
         # 四暗刻
         c = Counter(numlist)
-        kezi_num = 0
+        kezi_num = angang_num
         for k, v in c.items():
             if v == 3 and lastcard_num != k:
                 kezi_num += 1
@@ -484,7 +486,7 @@ class Player:
         # 三暗刻
         c = Counter(numlist)
         # 考虑手牌是111 222 45556和111 222 45556 777的情况
-        kezi_num = 0
+        kezi_num = angang_num
         for k, v in c.items():
             if v == 3 and lastcard_num != k:
                 kezi_num += 1
@@ -567,7 +569,7 @@ class Player:
                             kinds.remove(j)
             return kinds
         else:
-            return '鸡胡'
+            return ['鸡胡']
 
 
 if __name__ == '__main__':
@@ -590,9 +592,9 @@ if __name__ == '__main__':
     #               '条子': ['2条', '2条', '2条', '4条', '5条','6条'], '万字': [], '字牌': ['发财','发财']}
     # hand_cards = {'筒子': ['1筒', '2筒', '3筒'], '条子': [],
     #                             '万字': ['5万', '5万', '5万'], '字牌': ['发财', '发财']}
-    hand_cards = {'筒子': [], '条子': ['3条', '3条', '4条', '4条', '4条', '5条', '5条', '5条', '7条', '7条', '7条'], '万字': [],
+    hand_cards = {'筒子': ['1筒','2筒','2筒','3筒','3筒','4筒','5筒','6筒','7筒',], '条子': ['7条', '7条'], '万字': [],
                   '字牌': [], '花牌': []}
-    pgcards = {'viewable': ['3花','2条', '2条', '2条'], 'unviewable': []}
+    pgcards = {'viewable': ['1花','1花','3花','4花','3条', '3条', '3条','3花',], 'unviewable': []}
     player = Player('test', '1')
     player.hand_cards = hand_cards
     # print(player.is_hu(hand_cards))
