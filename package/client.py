@@ -30,7 +30,7 @@ class Client:
 
 
     def set_natsaddr(self, ip):
-        self.nats_addr = 'nats://' + str(ip)
+        self.nats_addr = 'nats://'+str(ip)
 
 
     def connect(self):
@@ -43,7 +43,7 @@ class Client:
 
 
     def get_help(self):
-        msg = '''
+        msg='''
             /****************************************************************************/
             输入 正整数n 代表要打掉的第n张手牌，输入 -n 代表要打掉的倒数第n张手牌，输入 x 打掉手里的花牌；
             输入 v 可查看其他牌面信息，包括牌堆剩余数量、其他玩家碰/杠后放桌上的牌、被打掉的牌；
@@ -68,10 +68,11 @@ class Client:
     #     elif key == keyboard.KeyCode.from_char('h'):
     #         # 打印帮助文档
     #         self.get_help()
-    # elif key == keyboard.KeyCode.from_char('c'):
-    #     # 狗叫
-    #     info = input('输入：')
-    #     self.send_bark(info)
+        # elif key == keyboard.KeyCode.from_char('c'):
+        #     # 狗叫
+        #     info = input('输入：')
+        #     self.send_bark(info)
+
 
     # def keyboard_listening(self):
     #     '''
@@ -79,6 +80,7 @@ class Client:
     #     '''
     #     with keyboard.Listener(on_press = self.on_press) as listener:
     #         listener.join()
+
 
     def generate_randomId(self):
         '''
@@ -156,7 +158,7 @@ class Client:
 
 
     def send_bark(self, info):
-        msg = (self.uniq_id + ',' + info).encode()
+        msg = (self.uniq_id + './?,*' + info).encode()
         self.client.publish('bark', payload = msg)
 
 
@@ -277,7 +279,7 @@ class Client:
 
     def handle_barkinfo(self, msg):
         id, info = msg.payload.decode().split(',')
-        print(id + '号：' + info)
+        print(id+'号：'+info)
 
 
     def handle_isjoin(self, msg):
@@ -325,14 +327,14 @@ class Client:
                 except:
                     if inp == 'x':  # 打掉花牌
                         break
-                    elif inp == 'v':  # 查看其他牌面信息
+                    elif inp == 'v':    # 查看其他牌面信息
                         print('\n牌堆剩余：' + str(self.tablecards_num))
                         for id, pgcards in self.otherplayers_cards:
                             print(str(id) + '号玩家：', pgcards)
-                        print('牌面：')
+                        print('被打掉的牌：')
                         self.print_leftcards(self.leftcards)
                         print()
-                    elif inp in ('h', 'H', 'help', 'Help', 'HELP'):
+                    elif inp in ('h','H','help','Help','HELP'):
                         self.get_help()
                     else:
                         self.send_bark(inp)
@@ -419,7 +421,7 @@ class Client:
     def handle_zimo(self, msg):
         hu_kind = msg.payload.decode()
         while True:
-            ifzimo = input('自摸' + hu_kind + '？(输入y/n) ')
+            ifzimo = input('自摸'+hu_kind+'？(输入y/n) ')
             if ifzimo in ('y', 'n', 'Y', 'N'):
                 break
         self.send_zimo(ifzimo)
@@ -428,14 +430,14 @@ class Client:
     def handle_showhucards(self, msg):
         msg = msg.payload.decode()
         id, handcards, pgcards, hu_kind = json.loads(msg)
-        print(hu_kind + '!\n' + id + '号自摸了！\n胡牌牌面信息：')
+        print(hu_kind+'!\n'+id+'号自摸了！\n胡牌牌面信息：')
         self.print_playercards(pgcards, handcards)
 
 
     def handle_dianpao(self, msg):
         hu_kind = msg.payload.decode()
         while True:
-            ifdianpao = input('点炮' + hu_kind + '？(输入y/n) ')
+            ifdianpao = input('点炮'+hu_kind+'？(输入y/n) ')
             if ifdianpao in ('y', 'n', 'Y', 'N'):
                 break
         self.send_dianpao(ifdianpao)
@@ -444,7 +446,7 @@ class Client:
     def handle_showdianpaocards(self, msg):
         msg = msg.payload.decode()
         id, handcards, pgcards, hu_kind = json.loads(msg)
-        print(hu_kind + '!\n' + id + '号点炮了！\n胡牌牌面信息：')
+        print(hu_kind+'!\n'+id + '号点炮了！\n胡牌牌面信息：')
         self.print_playercards(pgcards, handcards)
 
 
@@ -453,7 +455,7 @@ class Client:
         cptype = msg.payload.decode()
         while True:
             flag = input('杠/碰/no？(输入1/2/n) ')
-            if flag in ('1', '2', 'n', 'N'):
+            if flag in ('1','2', 'n', 'N'):
                 break
         self.send_chigang_peng(flag, cptype)
 
@@ -462,7 +464,7 @@ class Client:
         cptype = msg.payload.decode()
         while True:
             flag = input('点炮/碰/no？(输入1/2/n) ')
-            if flag in ('1', '2', 'n', 'N'):
+            if flag in ('1','2', 'n', 'N'):
                 break
         self.send_dianpao_peng(flag, cptype)
 
@@ -471,7 +473,7 @@ class Client:
         cptype = msg.payload.decode()
         while True:
             flag = input('点炮/杠/no？(输入1/2/n) ')
-            if flag in ('1', '2', 'n', 'N'):
+            if flag in ('1','2', 'n', 'N'):
                 break
         self.send_dianpao_chigang(flag, cptype)
 
@@ -480,7 +482,7 @@ class Client:
         cptype = msg.payload.decode()
         while True:
             flag = input('点炮/杠/碰/no？(输入1/2/3/n) ')
-            if flag in ('1', '2', '3', 'n', 'N'):
+            if flag in ('1','2', '3', 'n', 'N'):
                 break
         self.send_dianpao_chigang_peng(flag, cptype)
 
@@ -508,7 +510,7 @@ def start(curpath):
     with open(filename + '_clientInfo.txt', 'w', encoding = 'utf-8') as f:
         f.write(c.name + ',' + c.uniq_id)
 
-    ip = input('输入目标ip：')
+    ip = input('文字麻将\n输入目标ip：')
     if ip != 'n':
         c.set_natsaddr(ip)
     c.connect()

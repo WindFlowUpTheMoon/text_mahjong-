@@ -3,6 +3,7 @@ from base import Mahjong, Player
 from utils import *
 import json
 from copy import deepcopy
+from time import sleep
 
 
 class GameServer:
@@ -36,17 +37,32 @@ class GameServer:
         self.client.close()
 
 
+    def reset(self):
+        self.maj = Mahjong()
+        self.table_cards = self.maj.shuffle_cards()  # 未被使用的牌堆
+        # self.table_cards = ['6万']*50
+        self.left_cards = []  # 被打掉的牌堆
+        self.kind = 2  # 游戏类型（双人、三人、四人等）
+        self.last_leftcard = None
+        self.peng_type = None  # 碰的牌的类型
+        self.chigang_type = None
+        self.bugang_card = None  # 补杠摸到的那张牌
+        self.bugang_type = None
+        self.angang_card = None  # 暗杠摸到的那张牌
+        self.angang_type = None
+        self.curplayer_id = 1  # 当前轮到摸牌的玩家id
+
+        for p in self.players:
+            p.hand_cards = {'筒子': [], '条子': [], '万字': [], '字牌': [], '花牌': []}
+            p.pg_cards = []  # 碰、杠后的手牌
+            p.pg_num = 0  # 碰、杠的次数
+            p.angang_num = 0  # 暗杠的次数
+            p.hu_kind = None  # 胡牌类型
+            self.send_cardsinfo(p)
+
+
     def set_kind(self, x):
         self.kind = x
-
-
-    def nohu_ending_judge(self):
-        '''
-        流局判断
-        '''
-        if not self.table_cards:
-            return True
-        return False
 
 
     def distribute_cards(self):
@@ -255,11 +271,29 @@ class GameServer:
         self.client.publish(player.uniq_id + '.gameover', payload = msg.encode())
 
 
+    def init_start(self):
+        '''
+        初始开始游戏
+        '''
+        self.reset()
+        self.send_startgame()
+        self.distribute_cards()  # 发牌
+        p1,p2 = self.players
+        p1.hand_cards = {'筒子': [],
+                  '条子': ['5条', '5条', '7条', '7条', '8条', '8条', '9条', '9条'], '万字': [], '字牌': [],'花牌':[]}
+        p2.hand_cards = {'筒子': ['1筒','4筒','7筒'], '条子': ['2条',],'万字': ['3万', '6万'], '字牌': ['发财', '红中','白板','东风','北风','南风','西风'],'花牌':[]}
+        for p in self.players:  # 给每个对局中的玩家发送卡牌信息
+            self.send_cardsinfo(p)
+            self.send_showmycards(p)
+        curplayer = self.id_players_map[self.curplayer_id]  # 轮到打牌的玩家
+        self.send_throwcard(curplayer)
+
+
     def handle_bark(self, msg):
         '''
         处理玩家狗叫信息
         '''
-        uniq_id, info = msg.payload.decode().split(',')
+        uniq_id, info = msg.payload.decode().split('./?,*')
         bark_player = self.uniqid_players_map[uniq_id]
         print(str(bark_player.id) + '号:' + info)
         msg = str(bark_player.id) + ',' + info
@@ -286,22 +320,7 @@ class GameServer:
             self.send_isjoin(player, '欢迎加入对局！')
 
             if len(self.players) == self.kind:  # 玩家数量达到，开始游戏
-                self.send_startgame()
-                self.distribute_cards()  # 发牌
-                # test
-                # p1, p2 = self.players
-                # p1.hand_cards = {'筒子': [],
-                #                  '条子': ['1条', '1条', '1条', '2条', '3条', '4条', '5条', '6条', '7条', '8条', '9条', '9条', '9条'],
-                #                  '万字': ['1万'], '字牌': [], '花牌': []}
-                # p2.hand_cards = {'筒子': ['1筒', '4筒', '8筒'], '条子': ['3条', '3条', '8条'],
-                #                  '万字': ['2万', '5万', '5万', '8万', '9万'], '字牌': ['北风', '北风'], '花牌': []}
-                # p3.hand_cards = {'筒子': ['9筒', '9筒'], '条子': ['1条', '9条'], '万字': ['3万', '3万', '4万', '4万', '8万'], '字牌': ['南风', '白板', '红中', '红中'], '花牌': []}
-                for p in self.players:  # 给每个对局中的玩家发送卡牌信息
-                    self.send_cardsinfo(p)
-                    self.send_showmycards(p)
-
-                curplayer = self.id_players_map[self.curplayer_id]  # 轮到打牌的玩家
-                self.send_throwcard(curplayer)
+                self.init_start()
         else:
             print('已达最大玩家数量')
             self.send_isjoin(player, '已达最大玩家数量！')
@@ -322,6 +341,7 @@ class GameServer:
             msg = '流局！一群草包。'
             for p in self.players:
                 self.send_gameover(p, msg)
+            self.init_start()
             return
         self.send_getcard(curplayer, card)
         self.send_cardsinfo(curplayer)  # 摸牌后给该玩家发送牌面信息
@@ -390,6 +410,7 @@ class GameServer:
                     tmp_handcards = deepcopy(p.hand_cards)
                     tmp_handcards[card_type].append(lastcard)
                     tmp_handcards[card_type].sort()
+                    print('carddddddd:',tmp_handcards)
                     if not tmp_handcards['花牌']:
                         if p.is_hu(tmp_handcards):
                             p.hu_kind = p.kind_check(tmp_handcards, p.pg_cards, p.angang_num)
@@ -556,6 +577,8 @@ class GameServer:
             for p in self.players:
                 self.send_cardsinfo(p)
                 self.send_showhucards(p, player)
+            sleep(3)
+            self.init_start()
         elif ifzimo in ('n', 'N'):
             self.send_throwcard(player)
 
@@ -571,6 +594,8 @@ class GameServer:
             for p in self.players:
                 self.send_cardsinfo(p)
                 self.send_showdianpaocards(p, player)
+            sleep(3)
+            self.init_start()
         elif ifdianpao in ('n', 'N'):
             tmp = (self.curplayer_id + 1) % self.kind
             id = tmp if tmp else self.kind
@@ -624,6 +649,8 @@ class GameServer:
             for p in self.players:
                 self.send_cardsinfo(p)
                 self.send_showdianpaocards(p, player)
+            sleep(3)
+            self.init_start()
 
         elif flag == '2':  # 碰
             player.peng(self.last_leftcard, self.left_cards, cptype)
@@ -654,6 +681,8 @@ class GameServer:
             for p in self.players:
                 self.send_cardsinfo(p)
                 self.send_showdianpaocards(p, player)
+            sleep(3)
+            self.init_start()
 
         elif flag == '2':  # 吃杠
             player.chigang(self.last_leftcard, self.left_cards, cptype)
@@ -683,6 +712,8 @@ class GameServer:
             for p in self.players:
                 self.send_cardsinfo(p)
                 self.send_showdianpaocards(p, player)
+            sleep(3)
+            self.init_start()
 
         elif flag == '2':  # 吃杠
             player.chigang(self.last_leftcard, self.left_cards, cptype)
@@ -755,5 +786,5 @@ if __name__ == '__main__':
     # print(sup.distribute_cards())
     # sup.start()
     gs = GameServer()
-    gs.set_kind(3)
+    gs.set_kind(2)
     gs.run()
