@@ -73,8 +73,11 @@ class GameServer:
             p.pg_cards = {'viewable':[],'unviewable':[]}  # 碰、杠后的手牌
             p.pg_num = 0  # 碰、杠的次数
             p.angang_num = 0  # 暗杠的次数
+            p.money_gang = 0
             p.hu_kinds = None  # 胡牌类型
             p.first_getcard = True
+            p.dianpaoable = False
+            p.dianpao = -1
             self.send_cardsinfo(p)
 
 
