@@ -51,6 +51,7 @@
    'C:\\Program '
    'Files\\PlasticSCM5\\server\\api-ms-win-core-processthreads-l1-1-0.dll',
    'BINARY'),
+<<<<<<< HEAD
   ('api-ms-win-crt-runtime-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-crt-runtime-l1-1-0.dll',
    'BINARY'),
@@ -66,11 +67,36 @@
   ('api-ms-win-core-localization-l1-2-0.dll',
    'C:\\Program '
    'Files\\PlasticSCM5\\server\\api-ms-win-core-localization-l1-2-0.dll',
+=======
+  ('python38.dll', 'D:\\anaconda\\envs\\pytorch\\python38.dll', 'BINARY'),
+  ('api-ms-win-crt-stdio-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-crt-stdio-l1-1-0.dll',
+   'BINARY'),
+  ('VCRUNTIME140.dll',
+   'D:\\anaconda\\envs\\pytorch\\VCRUNTIME140.dll',
+   'BINARY'),
+  ('api-ms-win-crt-heap-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-crt-heap-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-runtime-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-crt-runtime-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-math-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-crt-math-l1-1-0.dll',
+   'BINARY'),
+  ('ucrtbase.dll', 'D:\\anaconda\\envs\\pytorch\\ucrtbase.dll', 'BINARY'),
+  ('api-ms-win-crt-conio-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-crt-conio-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-environment-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-crt-environment-l1-1-0.dll',
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
    'BINARY'),
   ('api-ms-win-crt-environment-l1-1-0.dll',
    'C:\\Program '
    'Files\\PlasticSCM5\\server\\api-ms-win-crt-environment-l1-1-0.dll',
    'BINARY'),
+<<<<<<< HEAD
   ('api-ms-win-core-processthreads-l1-1-1.dll',
    'C:\\Program '
    'Files\\PlasticSCM5\\server\\api-ms-win-core-processthreads-l1-1-1.dll',
@@ -90,16 +116,41 @@
    'BINARY'),
   ('api-ms-win-crt-locale-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-crt-locale-l1-1-0.dll',
+=======
+  ('api-ms-win-crt-process-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-crt-process-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-convert-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-crt-convert-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-string-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-crt-string-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-crt-time-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-crt-time-l1-1-0.dll',
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
    'BINARY'),
   ('api-ms-win-core-profile-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-core-profile-l1-1-0.dll',
    'BINARY'),
+<<<<<<< HEAD
   ('api-ms-win-core-debug-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-core-debug-l1-1-0.dll',
+=======
+  ('api-ms-win-core-profile-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-profile-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-sysinfo-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-sysinfo-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-processthreads-l1-1-1.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-processthreads-l1-1-1.dll',
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
    'BINARY'),
   ('api-ms-win-core-heap-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-core-heap-l1-1-0.dll',
    'BINARY'),
+<<<<<<< HEAD
   ('api-ms-win-core-errorhandling-l1-1-0.dll',
    'C:\\Program '
    'Files\\PlasticSCM5\\server\\api-ms-win-core-errorhandling-l1-1-0.dll',
@@ -117,11 +168,37 @@
    'BINARY'),
   ('ucrtbase.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\ucrtbase.dll',
+=======
+  ('api-ms-win-core-console-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-console-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-file-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-file-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-synch-l1-2-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-synch-l1-2-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-namedpipe-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-namedpipe-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-memory-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-memory-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-processthreads-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-processthreads-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-heap-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-heap-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-rtlsupport-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-rtlsupport-l1-1-0.dll',
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
    'BINARY'),
   ('api-ms-win-crt-filesystem-l1-1-0.dll',
    'C:\\Program '
    'Files\\PlasticSCM5\\server\\api-ms-win-crt-filesystem-l1-1-0.dll',
    'BINARY'),
+<<<<<<< HEAD
   ('VCRUNTIME140.dll',
    'C:\\Program '
    'Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.11_3.11.1520.0_x64__qbz5n2kfra8p0\\VCRUNTIME140.dll',
@@ -134,6 +211,19 @@
    'BINARY'),
   ('api-ms-win-crt-convert-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-crt-convert-l1-1-0.dll',
+=======
+  ('api-ms-win-core-libraryloader-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-libraryloader-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-interlocked-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-interlocked-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-synch-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-synch-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-file-l2-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-file-l2-1-0.dll',
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
    'BINARY'),
   ('api-ms-win-crt-time-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-crt-time-l1-1-0.dll',
@@ -142,6 +232,7 @@
    'C:\\Program '
    'Files\\PlasticSCM5\\server\\api-ms-win-core-namedpipe-l1-1-0.dll',
    'BINARY'),
+<<<<<<< HEAD
   ('api-ms-win-core-console-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-core-console-l1-1-0.dll',
    'BINARY'),
@@ -162,10 +253,18 @@
    'BINARY'),
   ('api-ms-win-core-file-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-core-file-l1-1-0.dll',
+=======
+  ('api-ms-win-core-errorhandling-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-errorhandling-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-debug-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-debug-l1-1-0.dll',
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
    'BINARY'),
   ('api-ms-win-core-string-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-core-string-l1-1-0.dll',
    'BINARY'),
+<<<<<<< HEAD
   ('api-ms-win-core-file-l1-2-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-core-file-l1-2-0.dll',
    'BINARY'),
@@ -175,6 +274,13 @@
    'BINARY'),
   ('api-ms-win-core-file-l2-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-core-file-l2-1-0.dll',
+=======
+  ('api-ms-win-core-processenvironment-l1-1-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-processenvironment-l1-1-0.dll',
+   'BINARY'),
+  ('api-ms-win-core-localization-l1-2-0.dll',
+   'D:\\anaconda\\envs\\pytorch\\api-ms-win-core-localization-l1-2-0.dll',
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
    'BINARY'),
   ('api-ms-win-core-memory-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-core-memory-l1-1-0.dll',
@@ -234,6 +340,7 @@
    'C:\\Program '
    'Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.11_3.11.1520.0_x64__qbz5n2kfra8p0\\DLLs\\libcrypto-3.dll',
    'BINARY'),
+<<<<<<< HEAD
   ('libffi-8.dll',
    'C:\\Program '
    'Files\\WindowsApps\\PythonSoftwareFoundation.Python.3.11_3.11.1520.0_x64__qbz5n2kfra8p0\\DLLs\\libffi-8.dll',
@@ -241,15 +348,29 @@
   ('api-ms-win-crt-utility-l1-1-0.dll',
    'C:\\Program Files\\PlasticSCM5\\server\\api-ms-win-crt-utility-l1-1-0.dll',
    'BINARY'),
+=======
+  ('libssl-1_1-x64.dll',
+   'D:\\anaconda\\envs\\pytorch\\Library\\bin\\libssl-1_1-x64.dll',
+   'BINARY'),
+  ('libcrypto-1_1-x64.dll',
+   'D:\\anaconda\\envs\\pytorch\\Library\\bin\\libcrypto-1_1-x64.dll',
+   'BINARY'),
+  ('libffi-7.dll', 'D:\\anaconda\\envs\\pytorch\\DLLs\\libffi-7.dll', 'BINARY'),
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
   ('base_library.zip',
    'D:\\pycharm\\workspace\\game\\text_mahjong\\package\\build\\client\\base_library.zip',
    'DATA'),
   ('nats_python-0.8.0.dist-info\\LICENSE',
+<<<<<<< HEAD
    'd:\\pycharm\\workspace\\venv\\lib\\site-packages\\nats_python-0.8.0.dist-info\\LICENSE',
+=======
+   'd:\\anaconda\\envs\\pytorch\\lib\\site-packages\\nats_python-0.8.0.dist-info\\LICENSE',
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
    'DATA'),
   ('nats_python-0.8.0.dist-info\\INSTALLER',
    'd:\\pycharm\\workspace\\venv\\lib\\site-packages\\nats_python-0.8.0.dist-info\\INSTALLER',
    'DATA'),
+<<<<<<< HEAD
   ('nats_python-0.8.0.dist-info\\RECORD',
    'd:\\pycharm\\workspace\\venv\\lib\\site-packages\\nats_python-0.8.0.dist-info\\RECORD',
    'DATA'),
@@ -261,11 +382,28 @@
    'DATA'),
   ('nats_python-0.8.0.dist-info\\REQUESTED',
    'd:\\pycharm\\workspace\\venv\\lib\\site-packages\\nats_python-0.8.0.dist-info\\REQUESTED',
+=======
+  ('nats_python-0.8.0.dist-info\\METADATA',
+   'd:\\anaconda\\envs\\pytorch\\lib\\site-packages\\nats_python-0.8.0.dist-info\\METADATA',
+   'DATA'),
+  ('nats_python-0.8.0.dist-info\\REQUESTED',
+   'd:\\anaconda\\envs\\pytorch\\lib\\site-packages\\nats_python-0.8.0.dist-info\\REQUESTED',
+   'DATA'),
+  ('nats_python-0.8.0.dist-info\\RECORD',
+   'd:\\anaconda\\envs\\pytorch\\lib\\site-packages\\nats_python-0.8.0.dist-info\\RECORD',
+   'DATA'),
+  ('nats_python-0.8.0.dist-info\\WHEEL',
+   'd:\\anaconda\\envs\\pytorch\\lib\\site-packages\\nats_python-0.8.0.dist-info\\WHEEL',
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
    'DATA')],
  [],
  False,
  False,
+<<<<<<< HEAD
  1695533756,
+=======
+ 1699603895,
+>>>>>>> cdf9ce5c11569297a50814d31f5a28c9d3bee8b5
  [('run.exe',
    'D:\\pycharm\\workspace\\venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\run.exe',
    'EXECUTABLE')])

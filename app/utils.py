@@ -31,8 +31,8 @@ def print_playercards(player):
     l1 = [num_map[i[0]] if i[0] in a else i[0] for i in l]
     l2 = [i[1] for i in l]
 
-    lp1 = [num_map[i[0]] if i[0] in a else i[0] for i in pgcards]
-    lp2 = [i[1] for i in pgcards]
+    lp1 = [num_map[i[0]] if i[0] in a else i[0] for i in pgcards['viewable'] + pgcards['unviewable']]
+    lp2 = [i[1] for i in pgcards['viewable'] + pgcards['unviewable']]
 
     for i in l1:
         print(i + ' ', end = '')
