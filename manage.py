@@ -83,7 +83,7 @@ def server_manage(game_type):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-game_type', default = 3, help = '选择游戏类型，双人、三人、四人或者更多')
+    parser.add_argument('-game_type', default = 2, help = '选择游戏类型，双人、三人、四人或者更多')
     args = parser.parse_args()
 
     thread1 = threading.Thread(target = nats_server)
