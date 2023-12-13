@@ -344,7 +344,7 @@ class Client:
 
     def handle_serverid(self, msg):
         self.server_id = msg.payload.decode()
-        print('分配到的服务器ID:', self.server_id)
+        print('\n分配到的服务器ID:', self.server_id)
 
 
     def handle_barkinfo(self, msg):
@@ -566,10 +566,12 @@ class Client:
 
 
     def handle_dianpao(self, msg):
-        hu_kind = msg.payload.decode()
+        msg = msg.payload.decode()
+        *hu_kind, qgh = msg.split(',')
+        dianpao_type = '点炮' if qgh == 'False' else '抢杠胡'
         while True:
             self.clear_buffer()
-            ifdianpao = input('点炮' + hu_kind + '？(输入y/n) ')
+            ifdianpao = input(dianpao_type + ','.join(hu_kind) + '？(输入y/n) ')
             if ifdianpao in ('y', 'n', 'Y', 'N'):
                 break
         self.send_dianpao(ifdianpao)
@@ -577,8 +579,9 @@ class Client:
 
     def handle_showdianpaocards(self, msg):
         msg = msg.payload.decode()
-        id, handcards, pgcards, hu_kind = json.loads(msg)
-        print(','.join(hu_kind) + '!\n' + id + '号点炮了！\n胡牌牌面信息：')
+        id, handcards, pgcards, hu_kind, qgh = json.loads(msg)
+        dianpao_type = '点炮' if not qgh else '抢杠胡'
+        print(','.join(hu_kind) + '!\n' + id + '号' + dianpao_type +'了！\n胡牌牌面信息：')
         self.print_playercards(pgcards, handcards)
 
 
@@ -655,6 +658,7 @@ def start(curpath):
     if ip != 'n':
         c.set_natsaddr(ip)
     c.connect()
+    print('uniq_id:', c.uniq_id)
 
     try:
         c.send_join()
@@ -672,4 +676,5 @@ if __name__ == '__main__':
         start(curpath)
     except:
         print_exc()
+        sleep(30)
     # rejoin(curpath)   #   如果断线了运行此命令

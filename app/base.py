@@ -1,4 +1,7 @@
 from random import shuffle
+from os import path
+import sys
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from app.utils import LastLeftCard, handcards2numlist
 from collections import Counter
 from app.config import MINGGANG, ANGANG, PLAYER_INIT_MONEY
@@ -48,6 +51,9 @@ class Player:
         self.money_gang = 0  # 杠得到的钱
         self.hu_kinds = None  # 胡牌类型
         self.first_getcard = True
+        self.dianpaoable = False    #是否可点炮
+        self.dianpao = -1   # 点炮状态，-1表示未处理，0表示不点，1表示点
+        self.qgh = False    #是否抢杠胡
 
 
     def get_card(self, table_cards):
@@ -347,7 +353,7 @@ class Player:
 
         # 豪华七小对
         c = Counter(numlist)
-        if len(numlist) == 14 and len(c) == 6 and all(i in (2, 4) for i in c.values()):
+        if len(numlist) == 14 and len(c) <= 6 and all(i in (2, 4) for i in c.values()):
             kinds.append('豪华七小对')
 
         # 清幺九
@@ -592,9 +598,15 @@ if __name__ == '__main__':
     #               '条子': ['2条', '2条', '2条', '4条', '5条','6条'], '万字': [], '字牌': ['发财','发财']}
     # hand_cards = {'筒子': ['1筒', '2筒', '3筒'], '条子': [],
     #                             '万字': ['5万', '5万', '5万'], '字牌': ['发财', '发财']}
+
     hand_cards = {'筒子': ['1筒', '1筒', '1筒'], '条子': ['1条', '1条', '1条', '9条', '9条', '9条'],
                   '万字': ['5万', '5万', '5万'], '字牌': ['发财', '发财'], '花牌': []}
     pgcards = {'viewable': ['1花','1花','3花','3花',], 'unviewable': []}
+
+    hand_cards = {'筒子': ['2筒','2筒','2筒','2筒','3筒','3筒','5筒','5筒',], '条子': ['7条', '7条','3条', '3条', '3条', '3条'], '万字': [],
+                  '字牌': [], '花牌': []}
+    pgcards = {'viewable': ['1花','1花','3花','4花','3花',], 'unviewable': []}
+
     player = Player('test', '1')
     player.hand_cards = hand_cards
     # print(player.is_hu(hand_cards))
