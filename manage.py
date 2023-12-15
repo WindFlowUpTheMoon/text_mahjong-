@@ -1,9 +1,9 @@
 import os
 import threading
-from app.server2 import GameServer
+from app.server3 import GameServer
 from time import sleep
 from pynats import NATSClient
-from app.base import Player
+from app.base2 import Player
 import argparse
 from traceback import print_exc
 
