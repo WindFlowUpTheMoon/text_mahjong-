@@ -1,5 +1,6 @@
+from collections import Counter
 
-def f(x, *args):
-    print(x)
-
-f(5,None)
+l = [1,1,2,3,4,3,5,2,1]
+c = Counter(l)
+print(c.keys())
+print(list(c.keys()))
