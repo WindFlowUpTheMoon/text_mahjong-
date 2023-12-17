@@ -12,29 +12,26 @@ from traceback import print_exc
 from collections import Counter
 from pprint import pprint
 from copy import copy
-import threading
 import msvcrt
 
 
 class Mahjong:
     def __init__(self):
-        self.types = ['筒子', '条子', '万字', '字牌', '花牌']
-        self.cards = {self.types[0]: list(range(1, 10)), self.types[1]: list(range(1, 10)),
-                      self.types[2]: list(range(1, 10)), \
-                      self.types[3]: ['东风', '南风', '西风', '北风', '红中', '发财', '白板'],
-                      self.types[4]: [1, 2, 3, 4]}
-        self.abb_map = {'筒': '筒子', '条': '条子', '万': '万字', '花': '花牌'}
-        self.all_cards = []
-        for k, v in self.cards.items():
-            if k in self.types[:3]:
-                for i in v:
-                    self.all_cards.extend([str(i) + k[0]] * 4)
-            elif k == self.types[3]:
-                for i in v:
-                    self.all_cards.extend([i] * 4)
-            else:
-                for i in v:
-                    self.all_cards.extend([str(i) + '花'] * 2)
+        self.types = ['筒', '条', '万', '字', '花']
+        # 筒：0-8  条：9-17  万：18-26  字：27-33  花：34-37
+        self.cards_num = [*list(range(1, 10)), *list(range(11, 20)), *list(range(21, 30)), 31, 33, 35, 37, \
+                          41, 43, 45, *list(range(-4, 0))[::-1]]
+        self.cards_text = ['一筒', '二筒', '三筒', '四筒', '五筒', '六筒', '七筒', '八筒', '九筒', '一条', '二条', '三条', '四条', \
+                           '五条', '六条', '七条', '八条', '九条', '一万', '二万', '三万', '四万', '五万', '六万', '七万', '八万', \
+                           '九万', '东风', '南风', '西风', '北风', '红中', '发财', '白板', '一花', '二花', '三花', '四花']
+        self.tong_range = self.cards_num[0:9]
+        self.tiao_range = self.cards_num[9:18]
+        self.wan_range = self.cards_num[18:27]
+        self.zi_range = self.cards_num[27:34]
+        self.hua_range = self.cards_num[34:]
+        self.cards_map = dict(zip(self.cards_num, self.cards_text))
+        self.cards_map2 = dict(zip(self.cards_text, self.cards_num))
+        self.all_cards = self.cards_num[:34] * 4 + self.cards_num[34:] * 2
 
 
 # 客户端类
@@ -56,10 +53,9 @@ class Client:
         self.maj = Mahjong()
         self.all_cards = self.maj.all_cards
 
-        set_all_cards = set(copy(self.maj.all_cards))
-        self.list_all_cards = list(set_all_cards)
-        self.num_map = dict(zip([str(i) for i in range(1,10)], ['一', '二', '三', '四', '五', '六', '七', '八', '九']))
-        for card in self.list_all_cards:
+        self.list_all_cards = copy(self.maj.cards_text)
+        self.num_map = dict(zip(['一', '二', '三', '四', '五', '六', '七', '八', '九'], [str(i) for i in range(1,10)]))
+        for card in self.maj.cards_text:
             if card[0] in self.num_map:
                 self.list_all_cards.append(self.num_map[card[0]]+card[1])
 
@@ -145,19 +141,17 @@ class Client:
         '''
         漂亮打印玩家手牌和碰/杠后的牌
         '''
-        a = [str(i) for i in range(1, 10)]
-        b = '一 二 三 四 五 六 七 八 九'.split(' ')
-        num_map = dict(zip(a, b))
         l = list()
         for k, v in handcards.items():
             for v0 in v:
-                l.append(v0)
-            if v: l.append(' ' * 2)
-        l1 = [num_map[i[0]] if i[0] in a else i[0] for i in l]
+                l.append(self.maj.cards_map[v0])
+            if v:
+                l.append(' ' * 2)
+        l1 = [i[0] for i in l]
         l2 = [i[1] for i in l]
 
-        lp1 = [num_map[i[0]] if i[0] in a else i[0] for i in pgcards['viewable'] + pgcards['unviewable']]
-        lp2 = [i[1] for i in pgcards['viewable'] + pgcards['unviewable']]
+        lp1 = [self.maj.cards_map[i][0] for i in pgcards['viewable'] + pgcards['unviewable']]
+        lp2 = [self.maj.cards_map[i][1] for i in pgcards['viewable'] + pgcards['unviewable']]
 
         for i in l1:
             print(i + ' ', end = '')
@@ -181,14 +175,14 @@ class Client:
         c = Counter(l)
         maj_map = {'筒子': [], '条子': [], '万字': [], '字牌': []}
         for k, v in c.items():
-            if k[1] == '筒':
-                maj_map['筒子'].append((k, v))
-            elif k[1] == '条':
-                maj_map['条子'].append((k, v))
-            elif k[1] == '万':
-                maj_map['万字'].append((k, v))
+            if self.maj.cards_map[k][1] == '筒':
+                maj_map['筒子'].append((self.maj.cards_map[k], v))
+            elif self.maj.cards_map[k][1] == '条':
+                maj_map['条子'].append((self.maj.cards_map[k], v))
+            elif self.maj.cards_map[k][1] == '万':
+                maj_map['万字'].append((self.maj.cards_map[k], v))
             else:
-                maj_map['字牌'].append((k, v))
+                maj_map['字牌'].append((self.maj.cards_map[k], v))
         print(maj_map)
 
 
@@ -198,10 +192,8 @@ class Client:
         '''
         l = 0
         for k, v in self.hand_cards.items():
-            for i in v:
-                l += 1
+            l += len(v)
         return l
-        # print('1111',self.handcards_num)
 
 
     # 发送加入请求
@@ -368,7 +360,6 @@ class Client:
         mycards, self.otherplayers_cards, self.tablecards_num, self.leftcards = msg
         self.leftcards2 = Counter(self.leftcards)
         self.hand_cards, self.pg_cards, self.money, self.money_gang = mycards
-        # print(type(msg),msg)
 
 
     def handle_showmycards(self, msg):
@@ -388,7 +379,8 @@ class Client:
         # 查看某玩家碰/杠的牌
         for id, pgcards, *_ in self.otherplayers_cards:
             if str(id) == player_id:
-                print(pgcards['viewable'] + ['*' for i in range(len(pgcards['unviewable']))])
+                print([self.maj.cards_map[i] for i in pgcards['viewable']] + \
+                      ['*' for i in range(len(pgcards['unviewable']))])
                 break
         else:
             print('输入有误！')
@@ -406,15 +398,15 @@ class Client:
                 if card[0] == v:
                     card = k + card[1]
         c = Counter(self.all_cards)
-        num = Counter(self.pg_cards['viewable'] + self.pg_cards['unviewable'])[card]
-        if card[1] in self.maj.abb_map:
-            type = self.maj.abb_map[card[1]]
-            num += Counter(self.hand_cards[type])[card]
+        card_num = self.maj.cards_map2[card]
+        num = Counter(self.pg_cards['viewable'] + self.pg_cards['unviewable'])[card_num]
+        if card[1] in self.maj.types:
+            num += Counter(self.hand_cards[card[1]])[card_num]
         else:
-            num += Counter(self.hand_cards['字牌'])[card]
+            num += Counter(self.hand_cards['字'])[card_num]
         for id, pgcards, *_ in self.otherplayers_cards:
-            num += Counter(pgcards['viewable'])[card]
-        print(card + '剩余：' + str(c[card] - self.leftcards2[card] - num))
+            num += Counter(pgcards['viewable'])[card_num]
+        print(card + '剩余：' + str(c[card_num] - self.leftcards2[card_num] - num))
 
 
     def check_mymoney(self):
@@ -476,8 +468,8 @@ class Client:
 
 
     def handle_getcard(self, msg):
-        msg = msg.payload.decode()
-        print('摸到牌：', msg)
+        card = msg.payload.decode()
+        print('摸到牌：', card)
 
 
     def handle_peng(self, msg):
@@ -651,12 +643,12 @@ def start(curpath):
     filename = curpath.split('\\')[-1].split('.')[0]
     # print('filename:', filename)
     c = Client()
-    with open(filename + '_clientInfo.txt', 'w', encoding = 'utf-8') as f:
-        f.write(c.name + ',' + c.uniq_id)
-
-    ip = input('文字麻将\n输入目标ip：')
-    if ip != 'n':
-        c.set_natsaddr(ip)
+    # with open(filename + '_clientInfo.txt', 'w', encoding = 'utf-8') as f:
+    #     f.write(c.name + ',' + c.uniq_id)
+    #
+    # ip = input('文字麻将\n输入目标ip：')
+    # if ip != 'n':
+    #     c.set_natsaddr(ip)
     c.connect()
     print('uniq_id:', c.uniq_id)
 
@@ -670,7 +662,7 @@ def start(curpath):
 
 
 if __name__ == '__main__':
-    # print(path.abspath(__file__))
+    print(path.abspath(__file__))
     curpath = path.abspath(__file__)
     try:
         start(curpath)
@@ -678,3 +670,9 @@ if __name__ == '__main__':
         print_exc()
         sleep(30)
     # rejoin(curpath)   #   如果断线了运行此命令
+    # client = Client()
+    # handcards = {'筒': [1, 2, 3, 4, 5, 5, 5, 6, 6, 6, 7, 7], '条': [11, 11, ], '万': [], '字': [], '花': []}
+    # pgcards = {'viewable': [], 'unviewable': []}
+    # client.print_playercards(pgcards,handcards)
+    # l = [1,2,3,5,12,12,13,43,43,23,15,2,35,33,31,31]
+    # client.print_leftcards(l)
