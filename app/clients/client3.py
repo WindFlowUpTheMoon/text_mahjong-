@@ -1,4 +1,4 @@
-from ..client import start
+from app.client2 import start
 from os import path
 
 

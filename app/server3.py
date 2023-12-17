@@ -6,7 +6,7 @@ from os import path
 import sys
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-from app.base import Mahjong, Player
+from app.base2 import Mahjong, Player
 from app.utils import *
 import json
 from copy import deepcopy
@@ -71,7 +71,7 @@ class GameServer:
         self.gangbao = False
         self.bugang_player = None
         for p in self.players:
-            p.hand_cards = {'筒子': [], '条子': [], '万字': [], '字牌': [], '花牌': []}
+            p.hand_cards = {'筒': [], '条': [], '万': [], '字': [], '花': []}
             p.pg_cards = {'viewable':[],'unviewable':[]}  # 碰、杠后的手牌
             p.pg_num = 0  # 碰、杠的次数
             p.angang_num = 0  # 暗杠的次数
@@ -88,18 +88,22 @@ class GameServer:
         '''
         发牌
         '''
-        for i in range(4):
-            if i < 3:
-                for player in self.players:
-                    for j in range(4):
-                        insert_card(self.table_cards, player.hand_cards, self.maj.cards, self.maj.abb_map)
+        for i in range(3):
+            for player in self.players:
+                for j in range(4):
+                    card = self.table_cards.pop(0)
+                    type = player.judge_card_type(card)
+                    player.hand_cards[type].append(card)
+        for j, player in enumerate(self.players):
+            if not j:
+                for k in range(2):
+                    card = self.table_cards.pop(0)
+                    type = player.judge_card_type(card)
+                    player.hand_cards[type].append(card)
             else:
-                for j, player in enumerate(self.players):
-                    if not j:
-                        for k in range(2):
-                            insert_card(self.table_cards, player.hand_cards, self.maj.cards, self.maj.abb_map)
-                    else:
-                        insert_card(self.table_cards, player.hand_cards, self.maj.cards, self.maj.abb_map)
+                card = self.table_cards.pop(0)
+                type = player.judge_card_type(card)
+                player.hand_cards[type].append(card)
 
         # 发完后洗牌（给牌排序）
         for player in self.players:
@@ -144,14 +148,14 @@ class GameServer:
         '''
         向玩家发送摸牌消息
         '''
-        self.client.publish(player.uniq_id + '.getcard', payload = card.encode())
+        self.client.publish(player.uniq_id + '.getcard', payload = self.maj.cards_map[card].encode())
 
 
     def send_throwcardinfo(self, player, player2, card):
         '''
         向玩家发送打掉的牌的信息
         '''
-        msg = str(player2.id) + '号打掉：' + card
+        msg = str(player2.id) + '号打掉：' + self.maj.cards_map[card]
         self.client.publish(player.uniq_id + '.throwcardinfo', payload = msg.encode())
 
 
@@ -164,7 +168,7 @@ class GameServer:
 
 
     def send_penginfo(self, player1, player2, card):
-        msg = str(player2.id) + '号碰掉了：' + card
+        msg = str(player2.id) + '号碰掉了：' + self.maj.cards_map[card]
         self.client.publish(player1.uniq_id + '.penginfo', payload = msg.encode())
 
 
@@ -177,7 +181,7 @@ class GameServer:
 
 
     def send_buganginfo(self, player1, player2, card):
-        msg = str(player2.id) + '号补杠：' + card
+        msg = str(player2.id) + '号补杠：' + self.maj.cards_map[card]
         self.client.publish(player1.uniq_id + '.buganginfo', payload = msg.encode())
 
 
@@ -238,7 +242,7 @@ class GameServer:
 
 
     def send_chiganginfo(self, player1, player2, card):
-        msg = str(player2.id) + '号杠掉了：' + card
+        msg = str(player2.id) + '号杠掉了：' + self.maj.cards_map[card]
         self.client.publish(player1.uniq_id + '.chiganginfo', payload = msg.encode())
 
 
@@ -324,7 +328,7 @@ class GameServer:
 
         curplayer = self.id_players_map[self.curplayer_id]  # 轮到打牌的玩家
         # 开局天胡
-        if not curplayer.hand_cards['花牌']:
+        if not curplayer.hand_cards['花']:
             hu_return = curplayer.is_hu(curplayer.hand_cards)
             if hu_return:
                 if hu_return != True:
@@ -384,7 +388,7 @@ class GameServer:
         bugang_return = curplayer.is_bugang(card)
         angang_return = curplayer.is_angang()
         hu_return = False
-        if not curplayer.hand_cards['花牌']:
+        if not curplayer.hand_cards['花']:
             hu_return = curplayer.is_hu(curplayer.hand_cards)
             if hu_return:
                 if hu_return != True:
@@ -444,15 +448,12 @@ class GameServer:
             for p in self.players:
                 if self.last_leftcard.player != p:
                     lastcard = self.last_leftcard.card
-                    if lastcard[1] in self.maj.abb_map:
-                        card_type = self.maj.abb_map[lastcard[1]]
-                    else:
-                        card_type = '字牌'
+                    card_type = p.judge_card_type(lastcard)
                     tmp_handcards = deepcopy(p.hand_cards)
                     tmp_handcards[card_type].append(lastcard)
                     tmp_handcards[card_type].sort()
 
-                    if not tmp_handcards['花牌']:
+                    if not tmp_handcards['花']:
                         hu_return = p.is_hu(tmp_handcards)
                         if hu_return:
                             if hu_return != True:
@@ -490,9 +491,9 @@ class GameServer:
                             self.action_map[action](p, cptype)
         # 花牌
         else:
-            player.pg_cards['viewable'].extend(player.hand_cards['花牌'])
-            hp_num = len(player.hand_cards['花牌'])
-            player.hand_cards['花牌'] = []
+            player.pg_cards['viewable'].extend(player.hand_cards['花'])
+            hp_num = len(player.hand_cards['花'])
+            player.hand_cards['花'] = []
             # 摸hp_num张牌
             for i in range(hp_num):
                 type, card = player.get_card(self.table_cards)
@@ -544,7 +545,7 @@ class GameServer:
                 tmp_handcards[self.bugang_type].append(self.bugang_card)
                 tmp_handcards[self.bugang_type].sort()
 
-                if not tmp_handcards['花牌']:
+                if not tmp_handcards['花']:
                     hu_return = p.is_hu(tmp_handcards)
                     if hu_return:
                         flag = True
@@ -809,3 +810,17 @@ class GameServer:
         self.client.subscribe(str(self.server_id) + '.dianpao_chigang_peng', callback = self.handle_dianpao_chigang_peng)
         self.client.wait()
 
+
+if __name__=='__main__':
+    p1 = Player('test1', 1)
+    p2 = Player('test2', 2)
+    players = [p1,p2]
+    uniqid_players_map, id_players_map = dict(), dict()
+    for i, player in enumerate(players):
+        uniqid_players_map[player.uniq_id] = player
+        player.id = i + 1
+        id_players_map[i + 1] = player
+    gs = GameServer(0, players, uniqid_players_map, id_players_map)
+    cards = gs.distribute_cards()
+    for i in cards:
+        print(i)
