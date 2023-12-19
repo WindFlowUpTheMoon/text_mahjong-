@@ -307,12 +307,12 @@ class GameServer:
         self.reset()
         self.distribute_cards()  # 发牌
 
-        self.table_cards=[18,6,31,31]
-        p1,p2 = self.players
-        p1.hand_cards = {'筒': [1,2,2,3,4,4,5,7,], '条': [13,13,17,17,18], '万': [23],
-                  '字': [], '花': []}
-        p2.hand_cards = {'筒': [3,3,4,4], '条': [],'万': [], '字': [], '花': []}
-        p2.pg_cards = {'viewable':[-2,-2,6,6,6,11,11,11,11,24,24,24,24], 'unviewable':[]}
+        # self.table_cards=[18,6,31,31]
+        # p1,p2 = self.players
+        # p1.hand_cards = {'筒': [1,2,2,3,4,4,5,7,], '条': [13,13,17,17,18], '万': [23],
+        #           '字': [], '花': []}
+        # p2.hand_cards = {'筒': [3,3,4,4], '条': [],'万': [], '字': [], '花': []}
+        # p2.pg_cards = {'viewable':[-2,-2,6,6,6,11,11,11,11,24,24,24,24], 'unviewable':[]}
 
         # self.table_cards=['7条','5万','东风','8条','8条','6筒','东风','8条','西风','西风',]
         # p1,p2,p3 = self.players
