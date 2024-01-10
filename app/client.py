@@ -646,9 +646,9 @@ def start(curpath):
     # with open(filename + '_clientInfo.txt', 'w', encoding = 'utf-8') as f:
     #     f.write(c.name + ',' + c.uniq_id)
     #
-    # ip = input('文字麻将\n输入目标ip：')
-    # if ip != 'n':
-    #     c.set_natsaddr(ip)
+    ip = input('文字麻将\n输入目标ip：')
+    if ip != 'n':
+        c.set_natsaddr(ip)
     c.connect()
     print('uniq_id:', c.uniq_id)
 

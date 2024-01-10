@@ -170,6 +170,7 @@ class Player:
             c = Counter(self.hand_cards[type])
             for card, num in c.items():
                 if num == 4:
+                    print('angang')
                     return type, card
         return False
 
@@ -370,6 +371,8 @@ class Player:
             if [i % 10 for i in numlist] == [1, 1, 2, 2, 3, 3, 5, 5, 7, 7, 8, 8, 9, 9]:
                 return ['一色双龙会']
 
+        # 一色四节高
+
         # 混幺九
         if all(i in [1, 9, 11, 19, 21, 29] + self.maj.zi_range for i in all_num):
             if any(i in [1, 11, 21] for i in all_num) and any(i in [9, 19, 29] for i in all_num) and \
@@ -435,12 +438,13 @@ class Player:
 
         # 混一色
         l = [i for i in all_num if i not in self.maj.zi_range]
-        l.sort()
-        for rng in (self.maj.tong_range, self.maj.tiao_range, self.maj.wan_range):
-            if l[-1] in rng and l[0] not in rng:
-                break
-        else:
-            kinds.append('混一色')
+        if l:
+            l.sort()
+            for rng in (self.maj.tong_range, self.maj.tiao_range, self.maj.wan_range):
+                if l[-1] in rng and l[0] not in rng:
+                    break
+            else:
+                kinds.append('混一色')
 
         # 双暗杠
         if self.angang_num == 2:

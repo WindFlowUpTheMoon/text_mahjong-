@@ -66,7 +66,7 @@ class GameServer:
         self.bugang_type = None
         self.angang_card = None  # 暗杠摸到的那张牌
         self.angang_type = None
-        self.curplayer_id = 1  # 当前轮到摸牌的玩家id
+        # self.curplayer_id = 1  # 当前轮到摸牌的玩家id
         self.hdly = '0'
         self.gangbao = False
         self.bugang_player = None
@@ -95,7 +95,7 @@ class GameServer:
                     type = player.judge_card_type(card)
                     player.hand_cards[type].append(card)
         for j, player in enumerate(self.players):
-            if not j:
+            if j == self.curplayer_id - 1:
                 for k in range(2):
                     card = self.table_cards.pop(0)
                     type = player.judge_card_type(card)
@@ -307,11 +307,11 @@ class GameServer:
         self.reset()
         self.distribute_cards()  # 发牌
 
-        # self.table_cards=[18,6,31,31]
+        # self.table_cards=[3,31,3,8,3,31]
         # p1,p2 = self.players
         # p1.hand_cards = {'筒': [1,2,2,3,4,4,5,7,], '条': [13,13,17,17,18], '万': [23],
         #           '字': [], '花': []}
-        # p2.hand_cards = {'筒': [3,3,4,4], '条': [],'万': [], '字': [], '花': []}
+        # p2.hand_cards = {'筒': [3,], '条': [11,11,12,14,14,15,15,18,19],'万': [24,24,24], '字': [], '花': []}
         # p2.pg_cards = {'viewable':[-2,-2,6,6,6,11,11,11,11,24,24,24,24], 'unviewable':[]}
 
         # self.table_cards=['7条','5万','东风','8条','8条','6筒','东风','8条','西风','西风',]
@@ -684,6 +684,7 @@ class GameServer:
         print(self.players_action.values())
         if ifdianpao in ('y', 'Y'):
             player.dianpao = 1
+            self.curplayer_id = player.id
             self.dianpao(player)
             return
         elif ifdianpao in ('n', 'N'):
